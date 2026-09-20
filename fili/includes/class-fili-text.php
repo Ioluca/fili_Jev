@@ -54,6 +54,7 @@ final class Fili_Text {
 	public static function anchors( string $masked, array $key_words, array $idf, array $furniture, int $limit = 6 ): array {
 		$keys  = array_fill_keys( $key_words, true );
 		$edge  = Fili_Lang::set( 'edge' );
+		$stop  = Fili_Lang::set( 'stop' );
 		$found = array();
 
 		foreach ( self::sentences( $masked ) as $sentence ) {
@@ -75,7 +76,11 @@ final class Fili_Text {
 					if ( strlen( $text ) < 6 || strlen( $text ) > 80 || preg_match( '~[^\p{L}\p{N}\'’\- ]|  ~u', $text ) ) {
 						continue;
 					}
-					if ( isset( $edge[ mb_strtolower( $first[0] ) ] ) || isset( $edge[ mb_strtolower( $last[0] ) ] ) ) {
+					// a phrase that opens or closes on a function word ('questo stile', 'sia l'ultima')
+					// is a slice of a sentence, not a name
+					$f = mb_strtolower( $first[0] );
+					$l = mb_strtolower( $last[0] );
+					if ( isset( $edge[ $f ] ) || isset( $edge[ $l ] ) || isset( $stop[ $f ] ) || isset( $stop[ $l ] ) ) {
 						continue;
 					}
 					$common = array();
