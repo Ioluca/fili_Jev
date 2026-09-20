@@ -1,0 +1,82 @@
+/* Fili lives inside wp-admin but keeps one committed look of its own: ink ground,
+   paper text, one ochre accent. Everything is scoped under .fili so nothing leaks
+   into the rest of the dashboard. */
+.fili {
+	--ink: #101A2E; --panel: #16233A; --raised: #1C2B45; --line: #26344E; --line-strong: #3A4A68;
+	--paper: #F2EBDD; --dim: #97A1B3; --ochre: #C98A32; --sage: #6E8A74; --red: #C0664F;
+	background: var(--ink); color: var(--paper); margin: 20px 20px 0 0; padding: 36px clamp(18px, 4vw, 48px) 56px;
+	border-radius: 4px; font-size: 15px; line-height: 1.6; max-width: 1180px;
+}
+.fili * { box-sizing: border-box; }
+.fili a { color: var(--paper); }
+.fili-head { margin-bottom: 28px; }
+.fili-eyebrow { margin: 0 0 10px; font: 500 11px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ochre); }
+.fili h1 { color: var(--paper); font: 400 clamp(2rem, 4.6vw, 3.2rem)/1.05 Georgia, "Times New Roman", serif; letter-spacing: -.01em; margin: 0 0 14px; padding: 0; }
+.fili-lead { max-width: 64ch; margin: 0; color: var(--dim); font-size: 15.5px; }
+.fili-panel { border-top: 1px solid var(--line); padding-top: 28px; }
+
+.fili-tiles { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+.fili-tile { flex: 1 1 170px; background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 16px 18px; }
+.fili-tile b { display: block; font: 500 28px/1.1 ui-monospace, Menlo, monospace; color: var(--ochre); font-variant-numeric: tabular-nums; }
+.fili-tile span { display: block; margin-top: 6px; font-size: 12px; color: var(--dim); }
+
+.fili-bar { height: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.fili-bar i { display: block; height: 100%; width: 0; background: var(--ochre); transition: width .4s ease; }
+.fili-phase { margin: 12px 0 22px; font: 400 12.5px/1.5 ui-monospace, Menlo, monospace; color: var(--dim); min-height: 1.5em; }
+
+.fili-btn { font: 500 13px/1 ui-monospace, Menlo, monospace; color: var(--paper); background: var(--raised); border: 1px solid var(--line-strong); border-radius: 3px; padding: 10px 16px; cursor: pointer; }
+.fili-btn:hover { border-color: var(--ochre); }
+.fili-btn:focus-visible, .fili-link:focus-visible, .fili input:focus-visible, .fili select:focus-visible, .fili textarea:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
+.fili-btn-go { background: var(--ochre); border-color: var(--ochre); color: #14100A; }
+.fili-btn[disabled] { opacity: .45; cursor: default; }
+.fili-link { background: none; border: 0; padding: 0; color: var(--ochre); cursor: pointer; font: inherit; text-decoration: underline; }
+.fili-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 18px; }
+.fili-all { font-size: 12.5px; color: var(--dim); }
+.fili-note { max-width: 70ch; margin: 8px 0 16px; font-size: 13px; color: var(--dim); }
+.fili-note b { color: var(--paper); }
+.fili-ok { color: var(--sage); }
+.fili-err { color: var(--red); }
+.fili-empty { color: var(--dim); padding: 28px 0; }
+
+.fili-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.fili-tabs a { padding: 9px 14px; font: 500 12.5px/1 ui-monospace, Menlo, monospace; color: var(--dim); text-decoration: none; border-bottom: 2px solid transparent; }
+.fili-tabs a.on { color: var(--paper); border-color: var(--ochre); }
+.fili-tabs span { color: var(--ochre); margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+.fili-list, .fili-groups { list-style: none; margin: 0; padding: 0; }
+.fili-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 16px 4px; border-top: 1px solid var(--line); margin: 0; }
+.fili-row:hover { background: var(--panel); }
+.fili-row.gone { opacity: .35; }
+.fili-pair { margin: 0 0 7px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; font-size: 14.5px; }
+.fili-pair a { text-decoration: none; border-bottom: 1px solid var(--line-strong); color: var(--dim); }
+.fili-pair a.to { color: var(--paper); }
+.fili-pair a:hover { color: var(--ochre); border-color: var(--ochre); }
+.fili-score { font: 500 12px/1 ui-monospace, Menlo, monospace; color: var(--ochre); font-variant-numeric: tabular-nums; }
+.fili-arrow { color: var(--sage); }
+.fili-ctx { margin: 0; font: 400 12.5px/1.7 ui-monospace, Menlo, monospace; color: var(--dim); max-width: 92ch; }
+.fili mark { background: rgba(201, 138, 50, .22); color: var(--paper); padding: 1px 3px; border-radius: 2px; box-shadow: 0 1px 0 var(--ochre); }
+.fili-do { display: flex; gap: 6px; }
+
+.fili-group { background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 16px 18px; margin: 0 0 12px; }
+.fili-group ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.fili-group li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0; }
+.fili-date { font: 400 11px/1 ui-monospace, Menlo, monospace; color: var(--dim); font-variant-numeric: tabular-nums; }
+.fili-edit { font-size: 11.5px; color: var(--sage) !important; }
+
+.fili-form fieldset { border: 0; border-top: 1px solid var(--line); margin: 0; padding: 24px 0; max-width: 640px; }
+.fili-form legend { font: 400 1.35rem/1.2 Georgia, serif; color: var(--paper); padding: 0 0 12px; }
+.fili-form label { display: block; margin: 14px 0 6px; font: 500 11px/1.3 ui-monospace, Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.fili-form label.fili-check { text-transform: none; letter-spacing: 0; font: 400 14px/1.5 inherit; color: var(--paper); }
+.fili-form input[type=text], .fili-form input[type=password], .fili-form input[type=number], .fili-form select, .fili-form textarea {
+	width: 100%; max-width: 100%; background: var(--raised); color: var(--paper); border: 1px solid var(--line-strong); border-radius: 3px; padding: 9px 12px; font: 400 14px/1.4 ui-monospace, Menlo, monospace; }
+.fili-form input[type=number] { max-width: 140px; }
+.fili-pages { margin-top: 20px; }
+.fili-pages .page-numbers { color: var(--dim); padding: 4px 9px; text-decoration: none; }
+.fili-pages .current { color: var(--ochre); }
+
+@media (max-width: 720px) {
+	.fili { margin-right: 10px; }
+	.fili-row { grid-template-columns: 22px minmax(0, 1fr); }
+	.fili-do { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) { .fili-bar i { transition: none; } }
