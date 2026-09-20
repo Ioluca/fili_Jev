@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Fili
  * Description:       Trova i link interni che mancano e gli articoli che raccontano due volte la stessa notizia. Propone, non scrive: ogni link lo approvi tu e si annulla con un clic.
- * Version:           0.1.0
+ * Version:           0.1.1
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Luca Cazzaniga
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FILI_VERSION', '0.1.0' );
+define( 'FILI_VERSION', '0.1.1' );
 define( 'FILI_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FILI_URL', plugin_dir_url( __FILE__ ) );
 

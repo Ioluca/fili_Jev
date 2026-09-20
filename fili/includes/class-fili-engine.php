@@ -425,6 +425,25 @@ final class Fili_Engine {
 	}
 
 	/**
+	 * Re-run the code guards on proposals still waiting for review. The guards get better
+	 * between versions, and a proposal made under older rules should not outlive them.
+	 * Costs nothing: no network, a few hundred short strings.
+	 */
+	public static function refilter(): void {
+		global $wpdb;
+		$rev = FILI_VERSION . ':' . md5_file( FILI_DIR . 'lang/' . fili_settings()['language'] . '.php' );
+		if ( get_option( 'fili_guard_rev' ) === $rev ) {
+			return;
+		}
+		foreach ( $wpdb->get_results( 'SELECT id, anchor FROM ' . Fili_DB::t( 'proposals' ) . " WHERE status='proposed'" ) as $p ) { // phpcs:ignore
+			if ( null !== Fili_Text::malformed( $p->anchor ) ) {
+				$wpdb->update( Fili_DB::t( 'proposals' ), array( 'status' => 'filtered' ), array( 'id' => $p->id ) );
+			}
+		}
+		update_option( 'fili_guard_rev', $rev, false );
+	}
+
+	/**
 	 * Groups of posts that tell the same news again. A legitimate follow-up
 	 * (something that happened later) is kept out.
 	 *

@@ -42,7 +42,9 @@
 .fili-btn:focus-visible, .fili-link:focus-visible, .fili input:focus-visible, .fili select:focus-visible, .fili textarea:focus-visible, .fili-tabs a:focus-visible { outline: 2px solid var(--thread); outline-offset: 2px; box-shadow: none; }
 .fili-link { background: none; border: 0; padding: 0; color: var(--thread); cursor: pointer; font: inherit; font-weight: 600; text-decoration: underline; }
 .fili-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
-.fili-all { font-size: 13px; color: var(--dim); }
+.fili-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
+.fili-sep { width: 1px; height: 24px; background: var(--line-strong); margin: 0 4px; }
+#fili-undo-last { margin-left: auto; font-weight: 600; }
 .fili-note { max-width: 70ch; margin: 8px 0 16px; font-size: 13.5px; color: var(--dim); }
 .fili-note b { color: var(--ink); }
 .fili-ok { color: var(--ok); font-weight: 600; }

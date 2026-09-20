@@ -70,7 +70,7 @@ final class Fili_Admin {
 	public static function ajax_decide(): void {
 		self::guard();
 		global $wpdb;
-		$to  = 'approved' === ( $_POST['to'] ?? '' ) ? 'approved' : 'rejected';
+		$to  = in_array( $_POST['to'] ?? '', array( 'approved', 'rejected', 'proposed' ), true ) ? (string) $_POST['to'] : 'rejected';
 		$ids = array_filter( array_map( 'intval', (array) ( $_POST['ids'] ?? array() ) ) );
 		foreach ( $ids as $id ) {
 			$wpdb->query( $wpdb->prepare( 'UPDATE ' . Fili_DB::t( 'proposals' ) . " SET status=%s WHERE id=%d AND status IN ('proposed','approved','rejected','undone')", $to, $id ) ); // phpcs:ignore
@@ -177,13 +177,14 @@ final class Fili_Admin {
 		$where  = $wpdb->prepare( 'status=%s AND score>=%f', $view, 'proposed' === $view ? (float) $s['threshold'] : 0 );
 		$total  = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . Fili_DB::t( 'proposals' ) . " WHERE $where" ); // phpcs:ignore
 		$rows   = $wpdb->get_results( 'SELECT * FROM ' . Fili_DB::t( 'proposals' ) . " WHERE $where ORDER BY score DESC LIMIT " . ( ( $page - 1 ) * $per ) . ",$per" ); // phpcs:ignore
-		$counts = $wpdb->get_results( 'SELECT status, COUNT(*) n FROM ' . Fili_DB::t( 'proposals' ) . ' GROUP BY status', OBJECT_K ); // phpcs:ignore
+		Fili_Engine::refilter();
+		$counts = $wpdb->get_results( $wpdb->prepare( 'SELECT status, COUNT(*) n FROM ' . Fili_DB::t( 'proposals' ) . " WHERE status<>'proposed' OR score>=%f GROUP BY status", (float) $s['threshold'] ), OBJECT_K ); // phpcs:ignore
 		$sugg   = self::measured_threshold();
 
 		self::head( __( 'Proposte', 'fili' ), __( 'Ogni frase evidenziata esiste già nell\'articolo. Tieni o butta: niente cambia sul sito finché non applichi.', 'fili' ) );
 		echo '<nav class="fili-tabs">';
 		foreach ( array( 'proposed' => __( 'Da vedere', 'fili' ), 'approved' => __( 'Tenute', 'fili' ), 'applied' => __( 'Applicate', 'fili' ), 'rejected' => __( 'Buttate', 'fili' ) ) as $k => $label ) {
-			printf( '<a class="%s" href="%s">%s <span>%d</span></a>', $k === $view ? 'on' : '', esc_url( admin_url( 'admin.php?page=fili-proposals&view=' . $k ) ), esc_html( $label ), (int) ( $counts[ $k ]->n ?? 0 ) );
+			printf( '<a class="%s" href="%s">%s <span data-count="%s">%d</span></a>', $k === $view ? 'on' : '', esc_url( admin_url( 'admin.php?page=fili-proposals&view=' . $k ) ), esc_html( $label ), esc_attr( $k ), (int) ( $counts[ $k ]->n ?? 0 ) );
 		}
 		echo '</nav>';
 
@@ -199,7 +200,17 @@ final class Fili_Admin {
 			echo '<p class="fili-empty">' . esc_html__( 'Niente qui, per ora.', 'fili' ) . '</p></div>';
 			return;
 		}
-		echo '<p class="fili-actions"><button class="fili-btn" data-bulk="approved">' . esc_html__( 'Tieni le selezionate', 'fili' ) . '</button> <button class="fili-btn" data-bulk="rejected">' . esc_html__( 'Butta le selezionate', 'fili' ) . '</button> <label class="fili-all"><input type="checkbox" id="fili-all"> ' . esc_html__( 'tutte in pagina', 'fili' ) . '</label></p><ul class="fili-list">';
+		echo '<div class="fili-toolbar" data-view="' . esc_attr( $view ) . '">';
+		if ( 'applied' !== $view ) {
+			$all_to = 'approved' === $view ? 'rejected' : 'approved';
+			printf(
+				'<button class="fili-btn fili-btn-go" data-bulk-all="%s">%s</button>',
+				esc_attr( $all_to ),
+				esc_html( sprintf( 'approved' === $all_to ? __( 'Tieni tutte le %d in pagina', 'fili' ) : __( 'Butta tutte le %d in pagina', 'fili' ), count( $rows ) ) )
+			);
+			echo '<span class="fili-sep"></span><button class="fili-btn" data-bulk="approved">' . esc_html__( 'Tieni le selezionate', 'fili' ) . '</button><button class="fili-btn" data-bulk="rejected">' . esc_html__( 'Butta le selezionate', 'fili' ) . '</button>';
+		}
+		echo '<button class="fili-link" id="fili-undo-last" hidden></button></div><ul class="fili-list">';
 		foreach ( $rows as $r ) {
 			$ctx = esc_html( $r->context );
 			$a   = esc_html( $r->anchor );

@@ -80,24 +80,55 @@
 	/* ---- proposals ---- */
 	const list = document.querySelector('.fili-list');
 	if (list) {
-		const fade = (ids) => ids.forEach((id) => { const li = list.querySelector('[data-id="' + id + '"]'); if (li) { li.classList.add('gone'); li.querySelectorAll('button,input').forEach((b) => { b.disabled = true; }); } });
+		const bar = document.querySelector('.fili-toolbar');
+		const view = bar ? bar.dataset.view : 'proposed';
+		const undoBtn = $('fili-undo-last');
+		let last = null; // the last decision, so a slip of the finger costs one click
+
+		const bump = (key, by) => { const el = document.querySelector('[data-count="' + key + '"]'); if (el) { el.textContent = Math.max(0, (parseInt(el.textContent, 10) || 0) + by); } };
+
+		// A decided proposal leaves the list: what stays on screen is what is left to do.
+		function leave(ids, to) {
+			ids.forEach((id) => { const li = list.querySelector('[data-id="' + id + '"]'); if (li) { li.remove(); } });
+			bump(view, -ids.length);
+			bump(to, ids.length);
+			if (undoBtn && ['approved', 'rejected'].includes(to)) {
+				last = { ids, from: view };
+				undoBtn.hidden = false;
+				undoBtn.textContent = (to === 'approved' ? 'Tenute ' : 'Buttate ') + ids.length + '. Annulla';
+			}
+			const bulkAll = document.querySelector('[data-bulk-all]');
+			const left = list.querySelectorAll('.fili-row').length;
+			if (bulkAll) { bulkAll.textContent = bulkAll.textContent.replace(/\d+/, left); }
+			if (!left) { window.location.reload(); } // page done: bring in the next one
+		}
+
 		list.addEventListener('click', async (ev) => {
 			const btn = ev.target.closest('button'); if (!btn) { return; }
 			const id = btn.closest('.fili-row').dataset.id;
+			btn.disabled = true;
 			try {
-				if (btn.dataset.to) { await call('decide', { to: btn.dataset.to, ids: [id] }); }
-				else if ('apply' in btn.dataset) { await call('apply', { id }); }
-				else if ('undo' in btn.dataset) { await call('undo', { id }); }
-				fade([id]);
-			} catch (e) { window.alert(e.message); }
+				if (btn.dataset.to) { await call('decide', { to: btn.dataset.to, ids: [id] }); leave([id], btn.dataset.to); }
+				else if ('apply' in btn.dataset) { await call('apply', { id }); leave([id], 'applied'); }
+				else if ('undo' in btn.dataset) { await call('undo', { id }); leave([id], 'proposed'); }
+			} catch (e) { btn.disabled = false; window.alert(e.message); }
 		});
-		document.querySelectorAll('[data-bulk]').forEach((b) => b.addEventListener('click', async () => {
-			const ids = [...list.querySelectorAll('.fili-pick:checked')].map((c) => c.value);
+
+		async function bulk(to, ids) {
 			if (!ids.length) { return; }
-			try { await call('decide', { to: b.dataset.bulk, ids }); fade(ids); } catch (e) { window.alert(e.message); }
-		}));
-		const all = $('fili-all');
-		if (all) { all.addEventListener('change', () => list.querySelectorAll('.fili-pick:not(:disabled)').forEach((c) => { c.checked = all.checked; })); }
+			try { await call('decide', { to, ids }); leave(ids, to); } catch (e) { window.alert(e.message); }
+		}
+		document.querySelectorAll('[data-bulk]').forEach((b) => b.addEventListener('click', () =>
+			bulk(b.dataset.bulk, [...list.querySelectorAll('.fili-pick:checked')].map((c) => c.value))));
+		document.querySelectorAll('[data-bulk-all]').forEach((b) => b.addEventListener('click', () =>
+			bulk(b.dataset.bulkAll, [...list.querySelectorAll('.fili-row')].map((li) => li.dataset.id))));
+
+		if (undoBtn) {
+			undoBtn.addEventListener('click', async () => {
+				if (!last) { return; }
+				try { await call('decide', { to: 'proposed', ids: last.ids }); window.location.reload(); } catch (e) { window.alert(e.message); }
+			});
+		}
 	}
 	const adopt = $('fili-adopt');
 	if (adopt) { adopt.addEventListener('click', async () => { try { await call('threshold'); window.location.reload(); } catch (e) { window.alert(e.message); } }); }
