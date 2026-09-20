@@ -56,6 +56,74 @@ final class Fili_Jev {
 		return new WP_Error( 'fili_retry', __( 'Il servizio è occupato, riprova più tardi.', 'fili' ) );
 	}
 
+	/**
+	 * The same as ask(), for several independent jobs at once. One request at a time spends
+	 * almost all of its time waiting on the network; a handful in flight cuts a run from
+	 * minutes to a fraction, at the same cost. How many is the owner's call: a fragile
+	 * shared host may want 1.
+	 *
+	 * @param array<int|string,array{state:mixed,questions:array}> $jobs
+	 * @return array<int|string,array|WP_Error> answers per job, same keys
+	 */
+	public static function ask_many( array $jobs ): array {
+		if ( count( $jobs ) <= 1 || (int) fili_settings()['parallel'] <= 1 ) {
+			return array_map( static fn( $job ) => self::ask( $job['state'], $job['questions'] ), $jobs );
+		}
+		$key = fili_api_key();
+		if ( '' === $key ) {
+			return array_fill_keys( array_keys( $jobs ), new WP_Error( 'fili_no_key', __( 'Manca la chiave API.', 'fili' ) ) );
+		}
+		if ( ! class_exists( '\WpOrg\Requests\Requests' ) ) {
+			require_once ABSPATH . WPINC . '/Requests/src/Autoload.php';
+			\WpOrg\Requests\Autoload::register();
+		}
+		$route    = self::ROUTES[ fili_settings()['route'] ] ?? self::ROUTES['typesafe'];
+		$requests = array();
+		$bodies   = array();
+		$planned  = 0.0;
+		foreach ( $jobs as $k => $job ) {
+			$bodies[ $k ] = wp_json_encode( array( 'state' => $job['state'], 'model' => $route['model'], 'questions' => $job['questions'] ) );
+			$planned     += self::estimate( $bodies[ $k ] );
+			$requests[ $k ] = array(
+				'url'     => $route['url'],
+				'type'    => 'POST',
+				'headers' => array( 'Authorization' => 'Bearer ' . $key, 'Content-Type' => 'application/json' ),
+				'data'    => $bodies[ $k ],
+			);
+		}
+		if ( self::month_spend() + $planned > (float) fili_settings()['monthly_budget'] ) {
+			return array_fill_keys( array_keys( $jobs ), new WP_Error( 'fili_budget', __( 'Tetto di spesa mensile raggiunto: Fili si ferma qui.', 'fili' ) ) );
+		}
+		$responses = \WpOrg\Requests\Requests::request_multiple( $requests, array(
+			'timeout' => 60,
+			'verify'  => ABSPATH . WPINC . '/certificates/ca-bundle.crt',
+		) );
+		$out   = array();
+		$spent = 0.0;
+		foreach ( $jobs as $k => $_ ) {
+			$r = $responses[ $k ] ?? null;
+			if ( ! $r instanceof \WpOrg\Requests\Response ) {
+				$out[ $k ] = new WP_Error( 'fili_net', __( 'Connessione non riuscita.', 'fili' ) );
+				continue;
+			}
+			if ( in_array( (int) $r->status_code, array( 429, 529 ), true ) ) {
+				$out[ $k ] = new WP_Error( 'fili_retry', __( 'Il servizio è occupato.', 'fili' ) );
+				continue;
+			}
+			$data = 200 === (int) $r->status_code ? json_decode( $r->body, true ) : null;
+			if ( ! is_array( $data ) || ! isset( $data['answers'] ) ) {
+				$out[ $k ] = new WP_Error( 'fili_http', sprintf( 'HTTP %d', (int) $r->status_code ) );
+				continue;
+			}
+			$spent    += (float) ( $data['usage']['cost'] ?? 0 ) ?: self::estimate( $bodies[ $k ] );
+			$out[ $k ] = $data['answers'];
+		}
+		if ( $spent > 0 ) {
+			self::record_spend( $spent );
+		}
+		return $out;
+	}
+
 	/** The official API returns no cost, so it is estimated from what is sent. */
 	public static function estimate( string $body ): float {
 		return strlen( $body ) / 3.5 / 1e6 * self::USD_PER_MTOK;

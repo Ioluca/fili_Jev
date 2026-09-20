@@ -127,7 +127,21 @@ final class Fili_Admin {
 	/* ------------------------------------------------------------- screens */
 
 	private static function head( string $title, string $lead ): void {
-		echo '<div class="wrap fili"><header class="fili-head"><p class="fili-eyebrow">Fili</p><h1>' . esc_html( $title ) . '</h1><p class="fili-lead">' . esc_html( $lead ) . '</p></header>';
+		// the spend is on every screen, not tucked away in the settings: whoever pays sees it
+		$spend  = get_option( 'fili_spend', array() );
+		$month  = Fili_Jev::month_spend();
+		$budget = (float) fili_settings()['monthly_budget'];
+		$state  = Fili_Engine::state();
+		$run    = isset( $state['spend_at_start'] ) ? max( 0, $month - (float) $state['spend_at_start'] ) : 0;
+		echo '<div class="wrap fili"><header class="fili-head"><div class="fili-top"><p class="fili-eyebrow">Fili</p>';
+		printf(
+			'<dl class="fili-spend" title="%s"><div><dt>%s</dt><dd>$%s</dd></div><div><dt>%s</dt><dd>$%s <span>/ $%s</span></dd></div><div><dt>%s</dt><dd>$%s</dd></div></dl>',
+			esc_attr__( 'Stima calcolata da Fili sui caratteri inviati: il servizio ufficiale non comunica il costo.', 'fili' ),
+			esc_html__( 'ultimo giro', 'fili' ), esc_html( number_format_i18n( $run, 4 ) ),
+			esc_html__( 'questo mese', 'fili' ), esc_html( number_format_i18n( $month, 4 ) ), esc_html( number_format_i18n( $budget, 2 ) ),
+			esc_html__( 'da sempre', 'fili' ), esc_html( number_format_i18n( array_sum( array_map( 'floatval', (array) $spend ) ), 4 ) )
+		);
+		echo '</div><h1>' . esc_html( $title ) . '</h1><p class="fili-lead">' . esc_html( $lead ) . '</p></header>';
 	}
 
 	public static function page_run(): void {
@@ -277,6 +291,9 @@ final class Fili_Admin {
 			<fieldset><legend><?php esc_html_e( 'Limiti', 'fili' ); ?></legend>
 				<label for="fili-max"><?php esc_html_e( 'Link nuovi per articolo, al massimo', 'fili' ); ?></label>
 				<input id="fili-max" type="number" min="1" max="10" name="max_per_post" value="<?php echo esc_attr( (string) $s['max_per_post'] ); ?>">
+				<label for="fili-parallel"><?php esc_html_e( 'Richieste insieme', 'fili' ); ?></label>
+				<input id="fili-parallel" type="number" min="1" max="8" name="parallel" value="<?php echo esc_attr( (string) $s['parallel'] ); ?>">
+				<p class="fili-note"><?php esc_html_e( 'Quante domande Fili tiene in volo nello stesso momento. Il costo non cambia, cambia il tempo: con 1 un sito da 800 articoli impiega una dozzina di minuti, con 4 circa tre. Su un hosting condiviso fragile lascia 1 o 2.', 'fili' ); ?></p>
 				<label for="fili-budget-in"><?php esc_html_e( 'Tetto di spesa al mese, in dollari', 'fili' ); ?></label>
 				<input id="fili-budget-in" type="number" min="0.05" step="0.05" name="monthly_budget" value="<?php echo esc_attr( (string) $s['monthly_budget'] ); ?>">
 				<p class="fili-note"><?php echo esc_html( sprintf( __( 'Speso questo mese, stimato: $%s. Un sito da 800 articoli costa circa 30 centesimi per il primo giro completo.', 'fili' ), number_format_i18n( Fili_Jev::month_spend(), 4 ) ) ); ?></p>
@@ -297,6 +314,7 @@ final class Fili_Admin {
 		$s['language']       = 'en' === ( $_POST['language'] ?? '' ) ? 'en' : 'it';
 		$s['post_types']     = array_values( array_intersect( array_map( 'sanitize_key', (array) ( $_POST['post_types'] ?? array( 'post' ) ) ), get_post_types( array( 'public' => true ) ) ) ) ?: array( 'post' );
 		$s['max_per_post']   = min( 10, max( 1, (int) ( $_POST['max_per_post'] ?? 3 ) ) );
+		$s['parallel']       = min( 8, max( 1, (int) ( $_POST['parallel'] ?? 4 ) ) );
 		$s['monthly_budget'] = max( 0.05, (float) ( $_POST['monthly_budget'] ?? 1 ) );
 		$s['themes']         = sanitize_textarea_field( wp_unslash( $_POST['themes'] ?? '' ) );
 		$s['read_only']      = empty( $_POST['read_only'] ) ? 0 : 1;

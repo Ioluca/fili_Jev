@@ -49,6 +49,7 @@ function fili_settings(): array {
 		'post_types'     => array( 'post' ),
 		'threshold'      => 0.60,
 		'max_per_post'   => 3,
+		'parallel'       => 4, // questions in flight at once; 1 on a fragile shared host
 		'monthly_budget' => 1.00,
 		'themes'         => '',
 		'read_only'      => 1, // while on, Fili can propose but has no way to touch a post

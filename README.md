@@ -4,7 +4,9 @@ Plugin WordPress che trova **i link interni che mancano** e **gli articoli che r
 
 Propone, non scrive. Ogni link lo approvi tu, e si annulla con un clic.
 
-Il giudizio lo dà [Jev](https://typesafe.ai) di TypeSafe AI, un modello che non scrive testo: risponde solo sì, no o scegli fra queste opzioni. Per questo è veloce e costa pochissimo. Sul sito dove Fili è nato, 777 articoli: **12.404 decisioni in 16 secondi, 26 centesimi di dollaro**.
+Il giudizio lo dà [Jev](https://typesafe.ai) di TypeSafe AI, un modello che non scrive testo: risponde solo sì, no o scegli fra queste opzioni. Per questo costa pochissimo.
+
+Sul sito dove Fili è nato, 777 articoli, il giro completo dentro WordPress ha fatto **13.705 decisioni per circa 29 centesimi di dollaro, usando 53 MB di memoria**.
 
 > Stato: versione 0.1, in prova su un sito vero. Non ancora pronto per la produzione di altri.
 
@@ -32,14 +34,33 @@ Il giudizio lo dà [Jev](https://typesafe.ai) di TypeSafe AI, un modello che non
 - Escono solo titolo e testo di contenuti **già pubblici**. Bozze e privati non vengono mai letti.
 - Fili parla con un solo servizio: quello che scegli (TypeSafe o OpenRouter), con la tua chiave. **Nessuna telemetria.** Si verifica in un file solo: `includes/class-fili-jev.php`.
 - La chiave si può definire in `wp-config.php` (`define( 'FILI_API_KEY', '...' );`) oppure nelle impostazioni, dove non viene mai rimostrata per intero.
-- Un tetto di spesa mensile ferma tutto quando lo raggiungi.
+- Un tetto di spesa mensile ferma tutto quando lo raggiungi, e la spesa è in vista su ogni schermata.
+- Niente caratteri o script caricati da fuori: l'interfaccia usa solo ciò che c'è già in WordPress.
 
 ## Cosa abbiamo misurato, compresi gli errori
 
-- La prima versione delle domande dava il **64%** di proposte da tenere. Riscrivendo le domande sui casi bocciati: **91%**.
-- Usare la frequenza di una frase nel sito come misura di qualità **non funziona**: serve solo a riconoscere il boilerplate.
+Tutti i numeri vengono da un sito vero di 777 articoli, su un banco di prova con PHP limitato a 128 MB come un hosting condiviso.
+
+**I tempi, detti per quello che sono.** Il tempo non è di Jev, che risponde in una frazione di secondo: è l'attesa della rete.
+
+| Come | Tempo per i link di 777 articoli |
+|---|---|
+| Prototipo esterno, 24 richieste insieme, via OpenRouter | 16 secondi |
+| Prototipo esterno, 24 richieste insieme, API ufficiale TypeSafe | 145 secondi |
+| Fili dentro WordPress, 1 richiesta alla volta | circa 12 minuti |
+| Fili dentro WordPress, 4 richieste insieme (il valore di partenza) | circa 4 minuti, estrapolato da 60 articoli misurati |
+
+Il costo è lo stesso in tutti i casi: si pagano i caratteri letti, non il tempo. Dopo il primo giro Fili lavora solo sugli articoli nuovi.
+
+**La qualità.** La prima versione delle domande dava il **64%** di proposte da tenere. Riscrivendo le domande sui casi bocciati: **91%** (20 su 22 in un campione riletto a mano).
+
+**La retromarcia.** Su sei articoli, tre Gutenberg e tre classici: link applicati, poi annullati, e il contenuto è tornato **identico al byte sei volte su sei**, con i blocchi intatti e nessun link dentro un altro link.
+
+**Gli errori.**
+- Usare la frequenza di una frase nel sito come misura di qualità **non funziona**: serve solo a riconoscere il boilerplate (una riga di firma presente in 430 articoli su 777).
 - Di tre domande scritte per distinguere un doppione da un seguito legittimo, **due erano inutili**: una rispondeva sempre sì, l'altra sempre no. Una domanda si giudica da come si distribuiscono le risposte, non da come è scritta.
 - I controlli di forma sono **per lingua**. Quelli italiani sono tarati su un sito vero; quelli inglesi sono una prima stesura non ancora misurata.
+- La spesa mostrata è una **stima** calcolata sui caratteri inviati, perché l'API ufficiale non comunica il costo. Sul giro completo ha dato 29 centesimi contro i 26 misurati per altra via.
 
 ## Installazione
 

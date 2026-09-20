@@ -34,7 +34,7 @@ final class Fili_Apply {
 		}
 		$at = Fili_Text::locate( $post->post_content, $p->anchor );
 		if ( null === $at ) {
-			return new WP_Error( 'fili_moved', __( 'La frase non è più nel testo: l\'articolo è cambiato dopo la proposta.', 'fili' ) );
+			return new WP_Error( 'fili_moved', __( 'La frase non è più disponibile: o l\'articolo è cambiato dopo la proposta, o cade dentro un link appena applicato. Fili non mette mai un link dentro un altro.', 'fili' ) );
 		}
 
 		$html = '<a href="' . esc_url( $url ) . '">' . $p->anchor . '</a>';

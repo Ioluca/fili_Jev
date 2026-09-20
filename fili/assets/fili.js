@@ -56,6 +56,10 @@
 			while (running && !['idle', 'done'].includes(s.phase)) {
 				s = await call('step');
 				paint(s);
+				if (s.busy) { // another worker holds the run: watch it instead of fighting it
+					$('fili-phase').textContent += ' (un altro processo sta già lavorando: guardo e basta)';
+					await new Promise((r) => setTimeout(r, 4000));
+				}
 			}
 		} catch (e) {
 			const err = $('fili-error'); err.hidden = false; err.textContent = e.message; err.className = 'fili-note fili-err';
