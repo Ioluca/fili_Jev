@@ -51,14 +51,14 @@ final class Fili_Key {
 	public static function write_config( string $key ) {
 		$path = self::config_path();
 		if ( '' === $path ) {
-			return new WP_Error( 'fili_cfg_missing', __( 'Non trovo wp-config.php.', 'fili' ) );
+			return new WP_Error( 'fili_cfg_missing', __( 'Cannot find wp-config.php.', 'fili' ) );
 		}
 		if ( ! is_writable( $path ) ) {
-			return new WP_Error( 'fili_cfg_ro', __( 'wp-config.php non è scrivibile: il tuo hosting lo protegge. Copia la riga a mano.', 'fili' ) );
+			return new WP_Error( 'fili_cfg_ro', __( 'wp-config.php is not writable: your host protects it. Copy the line by hand.', 'fili' ) );
 		}
 		$prima = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions
 		if ( false === $prima || '' === $prima ) {
-			return new WP_Error( 'fili_cfg_read', __( 'Non riesco a leggere wp-config.php.', 'fili' ) );
+			return new WP_Error( 'fili_cfg_read', __( 'Cannot read wp-config.php.', 'fili' ) );
 		}
 
 		$dopo = (string) preg_replace( self::RE, '', $prima ); // via the old line, whatever it looked like
@@ -73,7 +73,7 @@ final class Fili_Key {
 				}
 			}
 			if ( false === $pos ) {
-				return new WP_Error( 'fili_cfg_spot', __( 'Non trovo il punto giusto in wp-config.php: copia la riga a mano.', 'fili' ) );
+				return new WP_Error( 'fili_cfg_spot', __( 'Cannot find the right spot in wp-config.php: copy the line by hand.', 'fili' ) );
 			}
 			$dopo = substr_replace( $dopo, $blocco, $pos, 0 );
 		}
@@ -86,12 +86,12 @@ final class Fili_Key {
 		// hold the old content in memory: if the write half-succeeds, put it straight back
 		if ( false === file_put_contents( $path, $dopo, LOCK_EX ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions
 			file_put_contents( $path, $prima, LOCK_EX ); // phpcs:ignore WordPress.WP.AlternativeFunctions
-			return new WP_Error( 'fili_cfg_write', __( 'La scrittura non è riuscita: wp-config.php è rimasto com\'era.', 'fili' ) );
+			return new WP_Error( 'fili_cfg_write', __( 'The write failed: wp-config.php is unchanged.', 'fili' ) );
 		}
 		$riletto = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions
 		if ( $riletto !== $dopo ) {
 			file_put_contents( $path, $prima, LOCK_EX ); // phpcs:ignore WordPress.WP.AlternativeFunctions
-			return new WP_Error( 'fili_cfg_verify', __( 'Il file riletto non corrisponde: ho rimesso wp-config.php com\'era.', 'fili' ) );
+			return new WP_Error( 'fili_cfg_verify', __( 'The file read back does not match: wp-config.php has been put back as it was.', 'fili' ) );
 		}
 		return true;
 	}
@@ -104,15 +104,15 @@ final class Fili_Key {
 	 */
 	private static function check( string $code, string $key ): string {
 		if ( ! str_contains( $code, '<?php' ) || ! str_contains( $code, 'DB_NAME' ) ) {
-			return __( 'Il file risultante non sembra più wp-config.php: non ho scritto niente.', 'fili' );
+			return __( 'The result no longer looks like wp-config.php: nothing was written.', 'fili' );
 		}
 		try {
 			token_get_all( $code, TOKEN_PARSE );
 		} catch ( ParseError $e ) {
-			return __( 'Il file risultante non sarebbe PHP valido: non ho scritto niente.', 'fili' );
+			return __( 'The result would not be valid PHP: nothing was written.', 'fili' );
 		}
 		if ( '' !== $key && ! str_contains( $code, "'FILI_API_KEY'" ) ) {
-			return __( 'La riga della chiave non è finita nel file: non ho scritto niente.', 'fili' );
+			return __( 'The key line did not make it into the file: nothing was written.', 'fili' );
 		}
 		return '';
 	}

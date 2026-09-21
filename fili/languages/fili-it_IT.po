@@ -1,0 +1,411 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Fili 0.1.5\n"
+"Language: it_IT\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: fili\n"
+
+msgid "%1$d approved links waiting. Fili applies %2$d every %3$d minutes, oldest posts first."
+msgstr "%1$d link approvati in attesa. Fili ne applica %2$d ogni %3$d minuti, dagli articoli piu' vecchi ai piu' recenti."
+
+msgid "%1$d groups, %2$d posts. Genuine follow-ups, the ones reporting a later development, are already left out."
+msgstr "%1$d gruppi, %2$d articoli. I seguiti veri, quelli che raccontano uno sviluppo successivo, sono già esclusi."
+
+msgid "%d posts about the same piece of news"
+msgstr "%d pezzi sulla stessa notizia"
+
+msgid "(another process is already working: just watching)"
+msgstr "(un altro processo sta già lavorando: guardo e basta)"
+
+msgid "A link to that post already exists."
+msgstr "Il link verso quell'articolo c'è già."
+
+msgid "API key"
+msgstr "Chiave API"
+
+msgid "Add your API key in the settings first."
+msgstr "Prima inserisci la chiave API nelle impostazioni."
+
+msgid "Applied"
+msgstr "Applicate"
+
+msgid "Applied %1$d links, sent %2$d back for review, %3$d left."
+msgstr "Applicati %1$d link, %2$d rimandati alla revisione, ne restano %3$d."
+
+msgid "Apply"
+msgstr "Applica"
+
+msgid "Approved links go in a few at a time instead of all at once. Mostly this limits the damage when something is wrong: a mistake shows up on ten posts, not on two hundred. It also spreads the modified dates, so your sitemap reads as a site being tended rather than two hundred pages changed in one minute. Google does not penalise internal links to your own pages: this is our caution, not a rule of theirs."
+msgstr "I link approvati si applicano un po' alla volta invece che tutti insieme. Serve soprattutto a limitare i danni se qualcosa non va: un errore si vede su dieci articoli, non su duecento. In piu' la data di modifica degli articoli si distribuisce nel tempo, e la mappa del sito racconta un sito curato invece di duecento pagine cambiate in un minuto. Google non penalizza i link interni verso le proprie pagine: questa e' prudenza, non una sua regola."
+
+msgid "Asking Jev which connections hold…"
+msgstr "Chiedo a Jev quali legami reggono…"
+
+msgid "Asking Jev which ones tell the same news…"
+msgstr "Chiedo a Jev quali raccontano la stessa notizia…"
+
+msgid "At least 10 published posts are needed to find any connections."
+msgstr "Servono almeno 10 articoli pubblicati per trovare dei legami."
+
+msgid "At least 20 judged proposals are needed."
+msgstr "Servono almeno 20 proposte giudicate."
+
+msgid "Cannot find the right spot in wp-config.php: copy the line by hand."
+msgstr "Non trovo il punto giusto in wp-config.php: copia la riga a mano."
+
+msgid "Cannot find wp-config.php."
+msgstr "Non trovo wp-config.php."
+
+msgid "Cannot read wp-config.php."
+msgstr "Non riesco a leggere wp-config.php."
+
+msgid "Change key"
+msgstr "Cambia chiave"
+
+msgid "Connection failed."
+msgstr "Connessione non riuscita."
+
+msgid "Done. The proposals are waiting for you."
+msgstr "Finito. Le proposte ti aspettano."
+
+msgid "Drop"
+msgstr "Butta"
+
+msgid "Drop all %d"
+msgstr "Butta tutte e %d"
+
+msgid "Drop all %d proposals, not just the ones on this page?\n\nNothing is applied to the site: you can change your mind afterwards."
+msgstr "Buttare tutte e %d le proposte, non solo quelle in pagina?\n\nNiente viene applicato al sito: la decisione si cambia anche dopo."
+
+msgid "Drop selected"
+msgstr "Butta le selezionate"
+
+msgid "Drop the %d on this page"
+msgstr "Butta le %d in pagina"
+
+msgid "Dropped"
+msgstr "Buttate"
+
+msgid "Dropped %d. Undo"
+msgstr "Buttate %d. Annulla"
+
+msgid "Duplicates"
+msgstr "Doppioni"
+
+msgid "Estimated by Fili from the characters sent: the official service does not report the cost."
+msgstr "Stima calcolata da Fili sui caratteri inviati: il servizio ufficiale non comunica il costo."
+
+msgid "Every %d minutes (Fili)"
+msgstr "Ogni %d minuti (Fili)"
+
+msgid "Every highlighted phrase is already in the post. Keep it or drop it: nothing changes on the site until you apply."
+msgstr "Ogni frase evidenziata esiste già nell'articolo. Tieni o butta: niente cambia sul sito finché non applichi."
+
+msgid "Fili is in propose-only mode: turn off the safety catch in the settings to apply links."
+msgstr "Fili è in sola proposta: per applicare i link togli la sicura nelle impostazioni."
+
+msgid "Fili reads your published posts, works out which ones belong together and prepares the proposals. It touches no post at this stage."
+msgstr "Fili legge gli articoli pubblicati, cerca quali si parlano fra loro e prepara le proposte. In questa fase non tocca nessun articolo."
+
+msgid "Fili talks to one service only: the one you pick here, with your key. It sends nothing anywhere else."
+msgstr "Fili parla con un solo servizio: quello che scegli qui, con la tua chiave. Non manda niente a nessun altro."
+
+msgid "Gradual rollout"
+msgstr "Applicazione graduale"
+
+msgid "Groups of posts telling the same piece of news. They compete for the same search and no internal link fixes that: merge them, or make them genuinely different. Fili only points them out, it changes nothing."
+msgstr "Gruppi di articoli che raccontano la stessa notizia. Si contendono la stessa ricerca e nessun link rimedia: vanno uniti o distinti. Fili li segnala soltanto, non tocca niente."
+
+msgid "How many minutes between batches"
+msgstr "Ogni quanti minuti"
+
+msgid "How many questions Fili keeps in flight at once. The cost does not change, the time does: at 1 an 800-post site takes about a dozen minutes, at 4 around three. On fragile shared hosting leave it at 1 or 2."
+msgstr "Quante domande Fili tiene in volo nello stesso momento. Il costo non cambia, cambia il tempo: con 1 un sito da 800 articoli impiega una dozzina di minuti, con 4 circa tre. Su un hosting condiviso fragile lascia 1 o 2."
+
+msgid "Jev decisions"
+msgstr "decisioni di Jev"
+
+msgid "Judge at least 20 proposals and Fili measures the right threshold for this site."
+msgstr "Giudica almeno 20 proposte e Fili misura la soglia giusta per questo sito."
+
+msgid "Keep"
+msgstr "Tieni"
+
+msgid "Keep all %d"
+msgstr "Tieni tutte e %d"
+
+msgid "Keep all %d proposals, not just the ones on this page?\n\nNothing is applied to the site: you can change your mind afterwards."
+msgstr "Tenere tutte e %d le proposte, non solo quelle in pagina?\n\nNiente viene applicato al sito: la decisione si cambia anche dopo."
+
+msgid "Keep selected"
+msgstr "Tieni le selezionate"
+
+msgid "Keep the %d on this page"
+msgstr "Tieni le %d in pagina"
+
+msgid "Kept"
+msgstr "Tenute"
+
+msgid "Kept %d. Undo"
+msgstr "Tenute %d. Annulla"
+
+msgid "Language of the checks"
+msgstr "Lingua dei controlli"
+
+msgid "Limits"
+msgstr "Limiti"
+
+msgid "Links applied per batch"
+msgstr "Link applicati per volta"
+
+msgid "Looking for posts that resemble each other too closely…"
+msgstr "Cerco gli articoli che si assomigliano troppo…"
+
+msgid "Measured on your decisions, the threshold is"
+msgstr "Sulle tue decisioni la soglia misurata è"
+
+msgid "Monthly spending cap reached: Fili stops here."
+msgstr "Tetto di spesa mensile raggiunto: Fili si ferma qui."
+
+msgid "Monthly spending cap, in dollars"
+msgstr "Tetto di spesa al mese, in dollari"
+
+msgid "New links per post, at most"
+msgstr "Link nuovi per articolo, al massimo"
+
+msgid "No group found, or the run has not finished yet."
+msgstr "Nessun gruppo trovato, o il giro non è ancora finito."
+
+msgid "Not allowed."
+msgstr "Non autorizzato."
+
+msgid "Nothing here yet."
+msgstr "Niente qui, per ora."
+
+msgid "Nothing left to apply."
+msgstr "Non resta niente da applicare."
+
+msgid "One of the two posts is no longer published."
+msgstr "Uno dei due articoli non è più pubblicato."
+
+msgid "Pause"
+msgstr "Metti in pausa"
+
+msgid "Paused. Started now, it would finish in about %s."
+msgstr "In pausa. Avviandola ora, finirebbe fra circa %s."
+
+msgid "Proposals"
+msgstr "Proposte"
+
+msgid "Published content only. Drafts and private content are never read and never sent."
+msgstr "Solo contenuti già pubblicati. Bozze e contenuti privati non vengono mai letti né inviati."
+
+msgid "Queue finished: nothing left to apply."
+msgstr "Coda finita: non resta niente da applicare."
+
+msgid "Queue stopped: the safety catch is back on."
+msgstr "Coda fermata: la sicura è stata reinserita."
+
+msgid "Reading the posts and building the index…"
+msgstr "Leggo gli articoli e costruisco l’indice…"
+
+msgid "Remove the key and stop Fili"
+msgstr "Togli la chiave e ferma Fili"
+
+msgid "Remove the key?\n\nFili stops proposing until you enter another one. Links already applied stay where they are."
+msgstr "Togliere la chiave?\n\nFili smette di proporre finché non ne inserisci un’altra. I link già applicati restano dove sono."
+
+msgid "Requests in parallel"
+msgstr "Richieste insieme"
+
+msgid "Running. Next batch at %1$s, finishing in about %2$s."
+msgstr "In corso. Prossimo gruppo alle %1$s, finisce fra circa %2$s."
+
+msgid "Safety catch off: approved links can be applied."
+msgstr "Sicura tolta: i link approvati si possono applicare."
+
+msgid "Safety catch on: Fili can only propose, it cannot change any post"
+msgstr "Sicura inserita: Fili può solo proporre, non può modificare nessun articolo"
+
+msgid "Safety catch on: Fili can only propose."
+msgstr "Sicura inserita: Fili può solo proporre."
+
+msgid "Save"
+msgstr "Salva"
+
+msgid "Save to apply. Fili writes a single line in wp-config.php, checks the file is still valid before touching it and puts it back as it was if anything is off. It leaves no copy of the file in your site folder."
+msgstr "Salva per applicare. Fili scrive una riga sola in wp-config.php, controlla che il file resti valido prima di toccarlo e, se qualcosa non torna, lo rimette com'era. Non lascia copie del file nella cartella del sito."
+
+msgid "Saved."
+msgstr "Salvato."
+
+msgid "Service and key"
+msgstr "Servizio e chiave"
+
+msgid "Settings"
+msgstr "Impostazioni"
+
+msgid "Show the line to copy by hand"
+msgstr "Mostra la riga da copiare a mano"
+
+msgid "Spent this month, estimated: $%s. An 800-post site costs around 30 cents for the first full run."
+msgstr "Speso questo mese, stimato: $%s. Un sito da 800 articoli costa circa 30 centesimi per il primo giro completo."
+
+msgid "Start the gradual rollout"
+msgstr "Avvia l'applicazione graduale"
+
+msgid "Start the run"
+msgstr "Avvia il giro"
+
+msgid "Stop"
+msgstr "Ferma"
+
+msgid "Stopped."
+msgstr "Fermo."
+
+msgid "That proposal is not among the approved ones."
+msgstr "La proposta non è fra quelle approvate."
+
+msgid "The API key is missing."
+msgstr "Manca la chiave API."
+
+msgid "The database refused the change."
+msgstr "Il database ha rifiutato la modifica."
+
+msgid "The file read back does not match: wp-config.php has been put back as it was."
+msgstr "Il file riletto non corrisponde: ho rimesso wp-config.php com'era."
+
+msgid "The key line did not make it into the file: nothing was written."
+msgstr "La riga della chiave non è finita nel file: non ho scritto niente."
+
+msgid "The link was edited by hand: remove it from the editor."
+msgstr "Il link è stato modificato a mano: toglilo dall'editor."
+
+msgid "The phrase is no longer available: either the post changed after the proposal, or it falls inside a link just applied. Fili never puts a link inside another link."
+msgstr "La frase non è più disponibile: o l'articolo è cambiato dopo la proposta, o cade dentro un link appena applicato. Fili non mette mai un link dentro un altro."
+
+msgid "The phrases you use across dozens of posts. As an anchor they point at no post in particular: list them here, in quotes and separated by commas, and Fili drops them."
+msgstr "Le espressioni che usi in decine di articoli. Come ancora non indicano nessun articolo in particolare: scrivile qui, fra apici e separate da virgole, e Fili le scarta."
+
+msgid "The result no longer looks like wp-config.php: nothing was written."
+msgstr "Il file risultante non sembra più wp-config.php: non ho scritto niente."
+
+msgid "The result would not be valid PHP: nothing was written."
+msgstr "Il file risultante non sarebbe PHP valido: non ho scritto niente."
+
+msgid "The run"
+msgstr "Il giro"
+
+msgid "The safety catch is on: turn it off in the settings to apply links."
+msgstr "La sicura è inserita: togliela nelle impostazioni per poter applicare."
+
+msgid "The service is busy, try again later."
+msgstr "Il servizio è occupato, riprova più tardi."
+
+msgid "The service is busy."
+msgstr "Il servizio è occupato."
+
+msgid "The write failed: wp-config.php is unchanged."
+msgstr "La scrittura non è riuscita: wp-config.php è rimasto com'era."
+
+msgid "There is no saved key."
+msgstr "Non c'è nessuna chiave salvata."
+
+msgid "There is nothing to apply: keep a few proposals first."
+msgstr "Non c'è niente da applicare: prima tieni qualche proposta."
+
+msgid "This link is not recorded as applied."
+msgstr "Questo link non risulta applicato."
+
+msgid "This post already has the maximum of new links."
+msgstr "Questo articolo ha già il massimo di link nuovi."
+
+msgid "This site's standing themes"
+msgstr "I temi fissi di questo sito"
+
+msgid "Threshold in use:"
+msgstr "Soglia in uso:"
+
+msgid "To review"
+msgstr "Da vedere"
+
+msgid "Undo"
+msgstr "Annulla"
+
+msgid "Unexpected response from the service."
+msgstr "Risposta inattesa dal servizio."
+
+msgid "Use this one"
+msgstr "Usa questa"
+
+msgid "Wake-ups depend on visits to the site: on a quiet site the queue runs a little later than the interval says, never faster. You can pause and resume whenever you like."
+msgstr "Il risveglio dipende dalle visite al sito: su un sito tranquillo la coda avanza un po' piu' tardi di quanto dice l'intervallo, mai piu' in fretta. Puoi mettere in pausa e riprendere quando vuoi."
+
+msgid "Weighing the words…"
+msgstr "Peso le parole…"
+
+msgid "What it reads"
+msgstr "Cosa legge"
+
+msgid "Which service"
+msgstr "Da dove passa"
+
+msgid "all time"
+msgstr "da sempre"
+
+msgid "days"
+msgstr "giorni"
+
+msgid "edit"
+msgstr "modifica"
+
+msgid "hours"
+msgstr "ore"
+
+msgid "in the database"
+msgstr "nel database"
+
+msgid "in the site database"
+msgstr "nel database del sito"
+
+msgid "in use, stored %s"
+msgstr "in uso, salvata %s"
+
+msgid "in wp-config.php"
+msgstr "in wp-config.php"
+
+msgid "last run"
+msgstr "ultimo giro"
+
+msgid "minutes"
+msgstr "minuti"
+
+msgid "not available: your host protects the file"
+msgstr "non disponibile: il tuo hosting protegge il file"
+
+msgid "paste the new key here"
+msgstr "incolla qui la chiave nuova"
+
+msgid "posts judged"
+msgstr "articoli giudicati"
+
+msgid "posts read"
+msgstr "articoli letti"
+
+msgid "recommended: stays out of the database and out of its backups"
+msgstr "consigliato: resta fuori dal database e dai suoi backup"
+
+msgid "select"
+msgstr "seleziona"
+
+msgid "simpler: you manage it from here only"
+msgstr "più semplice: la gestisci solo da qui"
+
+msgid "this month"
+msgstr "questo mese"
+
+msgid "wp-config.php is not writable: your host protects it. Copy the line by hand."
+msgstr "wp-config.php non è scrivibile: il tuo hosting lo protegge. Copia la riga a mano."

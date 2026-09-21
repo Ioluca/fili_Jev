@@ -32,10 +32,10 @@ final class Fili_Queue {
 	/** @return true|WP_Error */
 	public static function start() {
 		if ( ! empty( fili_settings()['read_only'] ) ) {
-			return new WP_Error( 'fili_read_only', __( 'Fili è in sola proposta: per applicare i link togli la sicura nelle impostazioni.', 'fili' ) );
+			return new WP_Error( 'fili_read_only', __( 'Fili is in propose-only mode: turn off the safety catch in the settings to apply links.', 'fili' ) );
 		}
 		if ( ! self::pending() ) {
-			return new WP_Error( 'fili_empty', __( 'Non c\'è niente da applicare: prima tieni qualche proposta.', 'fili' ) );
+			return new WP_Error( 'fili_empty', __( 'There is nothing to apply: keep a few proposals first.', 'fili' ) );
 		}
 		self::stop();
 		wp_schedule_event( time() + 60, 'fili_interval', self::HOOK );
@@ -64,7 +64,7 @@ final class Fili_Queue {
 		$s = fili_settings();
 		if ( ! empty( $s['read_only'] ) ) {
 			self::stop();
-			self::note( __( 'Coda fermata: la sicura è stata reinserita.', 'fili' ) );
+			self::note( __( 'Queue stopped: the safety catch is back on.', 'fili' ) );
 			return;
 		}
 		$size = max( 1, min( 50, (int) $s['batch_size'] ) );
@@ -77,7 +77,7 @@ final class Fili_Queue {
 		) );
 		if ( ! $ids ) {
 			self::stop();
-			self::note( __( 'Coda finita: non resta niente da applicare.', 'fili' ) );
+			self::note( __( 'Queue finished: nothing left to apply.', 'fili' ) );
 			return;
 		}
 		$fatti = 0;
@@ -95,7 +95,7 @@ final class Fili_Queue {
 		}
 		self::note( sprintf(
 			/* translators: 1: links applied, 2: how many went back to review, 3: how many are left */
-			__( 'Applicati %1$d link, %2$d rimandati alla revisione, ne restano %3$d.', 'fili' ),
+			__( 'Applied %1$d links, sent %2$d back for review, %3$d left.', 'fili' ),
 			$fatti, count( $falliti ), self::pending()
 		) );
 		if ( ! self::pending() ) {
@@ -120,7 +120,7 @@ final class Fili_Queue {
 		$m = max( 5, (int) fili_settings()['batch_minutes'] );
 		$schedules['fili_interval'] = array(
 			'interval' => $m * 60,
-			'display'  => sprintf( __( 'Ogni %d minuti (Fili)', 'fili' ), $m ),
+			'display'  => sprintf( __( 'Every %d minutes (Fili)', 'fili' ), $m ),
 		);
 		return $schedules;
 	}

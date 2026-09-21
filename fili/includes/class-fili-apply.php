@@ -13,28 +13,28 @@ final class Fili_Apply {
 	public static function apply( int $proposal_id ) {
 		global $wpdb;
 		if ( ! empty( fili_settings()['read_only'] ) ) {
-			return new WP_Error( 'fili_read_only', __( 'Fili è in sola proposta: per applicare i link togli la sicura nelle impostazioni.', 'fili' ) );
+			return new WP_Error( 'fili_read_only', __( 'Fili is in propose-only mode: turn off the safety catch in the settings to apply links.', 'fili' ) );
 		}
 		$p = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . Fili_DB::t( 'proposals' ) . ' WHERE id=%d', $proposal_id ) ); // phpcs:ignore
 		if ( ! $p || 'approved' !== $p->status ) {
-			return new WP_Error( 'fili_state', __( 'La proposta non è fra quelle approvate.', 'fili' ) );
+			return new WP_Error( 'fili_state', __( 'That proposal is not among the approved ones.', 'fili' ) );
 		}
 		$post   = get_post( (int) $p->source_id );
 		$target = get_post( (int) $p->target_id );
 		if ( ! $post || ! $target || 'publish' !== $post->post_status || 'publish' !== $target->post_status ) {
-			return new WP_Error( 'fili_gone', __( 'Uno dei due articoli non è più pubblicato.', 'fili' ) );
+			return new WP_Error( 'fili_gone', __( 'One of the two posts is no longer published.', 'fili' ) );
 		}
 		$applied = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . Fili_DB::t( 'proposals' ) . " WHERE source_id=%d AND status='applied'", $post->ID ) ); // phpcs:ignore
 		if ( $applied >= (int) fili_settings()['max_per_post'] ) {
-			return new WP_Error( 'fili_cap', __( 'Questo articolo ha già il massimo di link nuovi.', 'fili' ) );
+			return new WP_Error( 'fili_cap', __( 'This post already has the maximum of new links.', 'fili' ) );
 		}
 		$url = get_permalink( $target );
 		if ( str_contains( $post->post_content, '/' . $target->post_name . '/' ) ) {
-			return new WP_Error( 'fili_linked', __( 'Il link verso quell\'articolo c\'è già.', 'fili' ) );
+			return new WP_Error( 'fili_linked', __( 'A link to that post already exists.', 'fili' ) );
 		}
 		$at = Fili_Text::locate( $post->post_content, $p->anchor );
 		if ( null === $at ) {
-			return new WP_Error( 'fili_moved', __( 'La frase non è più disponibile: o l\'articolo è cambiato dopo la proposta, o cade dentro un link appena applicato. Fili non mette mai un link dentro un altro.', 'fili' ) );
+			return new WP_Error( 'fili_moved', __( 'The phrase is no longer available: either the post changed after the proposal, or it falls inside a link just applied. Fili never puts a link inside another link.', 'fili' ) );
 		}
 
 		$html = '<a href="' . esc_url( $url ) . '">' . $p->anchor . '</a>';
@@ -51,7 +51,7 @@ final class Fili_Apply {
 			array( 'ID' => $post->ID )
 		);
 		if ( false === $ok ) {
-			return new WP_Error( 'fili_db', __( 'Il database ha rifiutato la modifica.', 'fili' ) );
+			return new WP_Error( 'fili_db', __( 'The database refused the change.', 'fili' ) );
 		}
 		clean_post_cache( $post->ID );
 		wp_save_post_revision( $post->ID ); // the state after
@@ -71,12 +71,12 @@ final class Fili_Apply {
 		global $wpdb;
 		$p = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . Fili_DB::t( 'proposals' ) . ' WHERE id=%d', $proposal_id ) ); // phpcs:ignore
 		if ( ! $p || 'applied' !== $p->status ) {
-			return new WP_Error( 'fili_state', __( 'Questo link non risulta applicato.', 'fili' ) );
+			return new WP_Error( 'fili_state', __( 'This link is not recorded as applied.', 'fili' ) );
 		}
 		$post = get_post( (int) $p->source_id );
 		$at   = $post ? strpos( $post->post_content, $p->inserted_html ) : false;
 		if ( false === $at ) {
-			return new WP_Error( 'fili_edited', __( 'Il link è stato modificato a mano: toglilo dall\'editor.', 'fili' ) );
+			return new WP_Error( 'fili_edited', __( 'The link was edited by hand: remove it from the editor.', 'fili' ) );
 		}
 		$old  = substr_replace( $post->post_content, $p->anchor, $at, strlen( $p->inserted_html ) );
 		$campi = array( 'post_content' => $old );

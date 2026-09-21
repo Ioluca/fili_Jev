@@ -7,19 +7,19 @@ final class Fili_CLI {
 	/** Run the whole analysis to the end. Proposals only: no post is touched. */
 	public function run(): void {
 		$s = Fili_Engine::start();
-		WP_CLI::log( sprintf( '%d articoli da leggere', $s['total'] ) );
+		WP_CLI::log( sprintf( '%d posts to read', $s['total'] ) );
 		$last = '';
 		while ( ! in_array( $s['phase'], array( 'idle', 'done' ), true ) ) {
 			$s = Fili_Engine::step();
 			if ( $s['phase'] !== $last ) {
-				WP_CLI::log( sprintf( '[%s] letti %d, giudicati %d, decisioni %d, memoria %d MB', $s['phase'], $s['indexed'], $s['judged'], $s['decisions'], memory_get_peak_usage( true ) / 1048576 ) );
+				WP_CLI::log( sprintf( '[%s] read %d, judged %d, decisions %d, memory %d MB', $s['phase'], $s['indexed'], $s['judged'], $s['decisions'], memory_get_peak_usage( true ) / 1048576 ) );
 				$last = $s['phase'];
 			}
 		}
 		if ( ! empty( $s['error'] ) ) {
 			WP_CLI::error( $s['error'] );
 		}
-		WP_CLI::success( sprintf( 'Finito in %d s. Spesa stimata del mese: $%.4f', time() - $s['started'], Fili_Jev::month_spend() ) );
+		WP_CLI::success( sprintf( 'Finished in %d s. Estimated spend this month: $%.4f', time() - $s['started'], Fili_Jev::month_spend() ) );
 	}
 
 	/** Show where things stand. */
@@ -29,7 +29,7 @@ final class Fili_CLI {
 		foreach ( $wpdb->get_results( 'SELECT status, COUNT(*) n FROM ' . Fili_DB::t( 'proposals' ) . ' GROUP BY status' ) as $r ) { // phpcs:ignore
 			WP_CLI::log( sprintf( '  %-10s %d', $r->status, $r->n ) );
 		}
-		WP_CLI::log( sprintf( '  gruppi di doppioni: %d', count( Fili_Engine::duplicate_groups() ) ) );
+		WP_CLI::log( sprintf( '  duplicate groups: %d', count( Fili_Engine::duplicate_groups() ) ) );
 	}
 
 	/**
@@ -44,7 +44,7 @@ final class Fili_CLI {
 		global $wpdb;
 		$settings = fili_settings();
 		if ( ! empty( $settings['read_only'] ) ) {
-			WP_CLI::error( 'Fili è in sola proposta. Togli la sicura nelle impostazioni prima di questa prova.' );
+			WP_CLI::error( 'Fili is in propose-only mode. Turn off the safety catch in the settings before this test.' );
 		}
 		foreach ( array_map( 'intval', $ids ) as $id ) {
 			$before = md5( (string) get_post_field( 'post_content', $id, 'raw' ) );
@@ -65,7 +65,7 @@ final class Fili_CLI {
 				$wpdb->update( Fili_DB::t( 'proposals' ), array( 'status' => 'proposed' ), array( 'id' => $pid ) );
 			}
 			$after = md5( (string) get_post_field( 'post_content', $id, 'raw' ) );
-			WP_CLI::log( sprintf( '#%d: %d link applicati, contenuto cambiato: %s, tornato identico: %s', $id, count( $done ), $mid !== $before ? 'sì' : 'no', $after === $before ? 'SÌ' : 'NO !!' ) );
+			WP_CLI::log( sprintf( '#%d: %d links applied, content changed: %s, came back identical: %s', $id, count( $done ), $mid !== $before ? 'yes' : 'no', $after === $before ? 'YES' : 'NO !!' ) );
 		}
 	}
 }

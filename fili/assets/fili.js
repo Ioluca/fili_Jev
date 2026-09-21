@@ -2,7 +2,7 @@
 (function () {
 	'use strict';
 	const $ = (id) => document.getElementById(id);
-	const nf = new Intl.NumberFormat(document.documentElement.lang || 'it-IT');
+	const nf = new Intl.NumberFormat(FILI.locale || undefined);
 
 	async function call(action, data) {
 		const body = new URLSearchParams({ action: 'fili_' + action, nonce: FILI.nonce });
@@ -16,11 +16,12 @@
 	}
 
 	/* ---- the run ---- */
-	const PHASES = {
-		idle: 'Fermo.', index: 'Leggo gli articoli e costruisco l’indice…', finalize: 'Peso le parole…',
-		propose: 'Chiedo a Jev quali legami reggono…', pairs_find: 'Cerco gli articoli che si assomigliano troppo…',
-		pairs_judge: 'Chiedo a Jev quali raccontano la stessa notizia…', done: 'Finito. Le proposte ti aspettano.'
-	};
+	const T = (k) => (FILI.i18n && FILI.i18n[k]) || k;
+	const PHASES = () => ({
+		idle: T('phaseIdle'), index: T('phaseIndex'), finalize: T('phaseFinalize'),
+		propose: T('phasePropose'), pairs_find: T('phasePairsFind'),
+		pairs_judge: T('phasePairsJudge'), done: T('phaseDone')
+	});
 	let running = false;
 
 	function paint(s) {
@@ -39,7 +40,7 @@
 		else if (s.phase === 'pairs_judge') { pct = 92; }
 		else if (s.phase === 'done') { pct = 100; }
 		$('fili-progress').style.width = pct.toFixed(1) + '%';
-		$('fili-phase').textContent = PHASES[s.phase] || '';
+		$('fili-phase').textContent = PHASES()[s.phase] || '';
 		const err = $('fili-error');
 		err.hidden = !s.error;
 		err.textContent = s.error || '';
@@ -57,7 +58,7 @@
 				s = await call('step');
 				paint(s);
 				if (s.busy) { // another worker holds the run: watch it instead of fighting it
-					$('fili-phase').textContent += ' (un altro processo sta già lavorando: guardo e basta)';
+					$('fili-phase').textContent += ' ' + T('busyElsewhere');
 					await new Promise((r) => setTimeout(r, 4000));
 				}
 			}
@@ -95,7 +96,7 @@
 			if (undoBtn && ['approved', 'rejected'].includes(to)) {
 				last = { ids, from: view };
 				undoBtn.hidden = false;
-				undoBtn.textContent = (to === 'approved' ? 'Tenute ' : 'Buttate ') + ids.length + '. Annulla';
+				undoBtn.textContent = T(to === 'approved' ? 'undoKept' : 'undoDropped').replace('%d', ids.length);
 			}
 			const bulkAll = document.querySelector('[data-bulk-all]');
 			const left = list.querySelectorAll('.fili-row').length;
@@ -127,7 +128,7 @@
 		document.querySelectorAll('[data-every]').forEach((b) => b.addEventListener('click', async () => {
 			const n = b.dataset.n;
 			const keep = b.dataset.every === 'approved';
-			if (!window.confirm((keep ? 'Tenere' : 'Buttare') + ' tutte e ' + n + ' le proposte, non solo quelle in pagina?\n\nNiente viene applicato al sito: la decisione si cambia anche dopo.')) { return; }
+			if (!window.confirm(T(keep ? 'confirmKeepAll' : 'confirmDropAll').replace('%d', n))) { return; }
 			b.disabled = true;
 			try { await call('decide_all', { to: b.dataset.every, from: b.dataset.from }); window.location.reload(); }
 			catch (e) { b.disabled = false; window.alert(e.message); }
@@ -147,19 +148,19 @@
 		const go = $('fili-queue-go'), stop = $('fili-queue-stop');
 
 		const durata = (s) => {
-			if (s < 3600) { return Math.round(s / 60) + ' minuti'; }
+			if (s < 3600) { return Math.round(s / 60) + ' ' + T('minutes'); }
 			const h = Math.round(s / 3600);
-			return h < 48 ? h + ' ore' : Math.round(h / 24) + ' giorni';
+			return h < 48 ? h + ' ' + T('hours') : Math.round(h / 24) + ' ' + T('days');
 		};
-		const orario = (t) => new Date(t * 1000).toLocaleString('it-IT', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+		const orario = (t) => new Date(t * 1000).toLocaleString(FILI.locale || undefined, { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 
 		function paintQueue(q) {
 			if (!q.restano) {
-				stateEl.textContent = 'Non resta niente da applicare.';
+				stateEl.textContent = T('queueEmpty');
 			} else if (q.attiva) {
-				stateEl.textContent = 'In corso. Prossimo gruppo alle ' + orario(q.prossima) + ', finisce fra circa ' + durata(q.eta) + '.';
+				stateEl.textContent = T('queueRunning').replace('%1$s', orario(q.prossima)).replace('%2$s', durata(q.eta));
 			} else {
-				stateEl.textContent = 'In pausa. Avviandola ora, finirebbe fra circa ' + durata(q.eta) + '.';
+				stateEl.textContent = T('queuePaused').replace('%s', durata(q.eta));
 			}
 			if (go) { go.hidden = q.attiva || !q.restano; }
 			if (stop) { stop.hidden = !q.attiva; }
@@ -200,7 +201,7 @@
 	}
 	if (keyDel) {
 		keyDel.addEventListener('click', async () => {
-			if (!window.confirm('Togliere la chiave?\n\nFili smette di proporre finche\u2019 non ne inserisci un\u2019altra. I link gia\u2019 applicati restano dove sono.')) { return; }
+			if (!window.confirm(T('confirmKeyDelete'))) { return; }
 			try { await call('key_delete'); window.location.reload(); } catch (e) { window.alert(e.message); }
 		});
 	}

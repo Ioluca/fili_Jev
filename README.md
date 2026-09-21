@@ -1,75 +1,97 @@
 # Fili
 
-Plugin WordPress che trova **i link interni che mancano** e **gli articoli che raccontano due volte la stessa notizia**.
+A WordPress plugin that finds **the internal links your site is missing** and **the posts that tell the same news twice**.
 
-Propone, non scrive. Ogni link lo approvi tu, e si annulla con un clic.
+It proposes, it does not write. You approve every link, and one click undoes it.
 
-Il giudizio lo dà [Jev](https://typesafe.ai) di TypeSafe AI, un modello che non scrive testo: risponde solo sì, no o scegli fra queste opzioni. Per questo costa pochissimo.
+The judgement comes from [Jev](https://typesafe.ai) by TypeSafe AI, a model that writes no text: it answers yes, no, or pick one of these. That is why it costs almost nothing.
 
-Sul sito dove Fili è nato, 777 articoli, il giro completo dentro WordPress ha fatto **13.705 decisioni per circa 29 centesimi di dollaro, usando 53 MB di memoria**.
+On the site Fili was built for, 777 posts, a full run inside WordPress made **13,705 decisions for about $0.29, using 53 MB of memory**.
 
-> Stato: versione 0.1, in prova su un sito vero. Non ancora pronto per la produzione di altri.
+*[Leggimi in italiano](README.it.md)*
 
-## Cosa fa
+> **Status: 0.1.5, tested on one site.** Not ready for other people's production sites yet. The code-level checks are tuned for Italian; the English lists are a first draft that has not been measured.
 
-1. **Legge** gli articoli pubblicati e costruisce un indice in tabelle sue.
-2. **Propone** i link: per ogni articolo trova i più affini e chiede a Jev se il legame regge e quale frase, *già scritta nell'articolo*, può portarlo.
-3. **Tu rivedi**: ogni proposta è mostrata dentro la frase in cui vivrebbe. Tieni o butta.
-4. **Applica** solo ciò che hai approvato. Ogni modifica diventa una revisione di WordPress.
-5. **Segnala i doppioni**: gruppi di articoli sulla stessa notizia. Li mostra soltanto, non unisce mai niente.
+---
 
-## Le regole
+## What it does
 
-**Sul contenuto**
-- Non scrive mai senza approvazione. Appena installato ha la *sicura inserita*: può solo proporre.
-- L'ancora è testo che esiste già, parola per parola. Mai dentro un link, un titolo, una citazione, una didascalia, del codice, uno shortcode.
-- Al massimo 3 link nuovi per articolo (si cambia), mai verso sé stesso, mai se il link c'è già, mai fra doppioni.
-- Ogni link si annulla, e l'articolo torna identico al byte.
+1. **Reads** your published posts and builds an index in tables of its own.
+2. **Proposes** the links: for every post it finds the closest ones and asks Jev whether the connection holds and which phrase, *already written in the post*, can carry it.
+3. **You review**: every proposal is shown inside the sentence it would live in. Keep it or drop it, one at a time or a whole page at once.
+4. **Applies** only what you approved, a few links at a time over hours or days.
+5. **Reports duplicates**: groups of posts about the same piece of news. It only points them out, it never merges anything.
 
-**Sulla qualità**
-- Al codice le regole che una macchina verifica meglio (un verbo nell'ancora, un frammento troncato, il boilerplate del sito). A Jev solo la lettura.
-- **La soglia si misura sul tuo sito**: dopo 20 proposte giudicate, Fili calcola la soglia sulle tue decisioni. Non esiste un numero buono per tutti.
+## The rules
 
-**Sulla riservatezza**
-- Escono solo titolo e testo di contenuti **già pubblici**. Bozze e privati non vengono mai letti.
-- Fili parla con un solo servizio: quello che scegli (TypeSafe o OpenRouter), con la tua chiave. **Nessuna telemetria.** Si verifica in un file solo: `includes/class-fili-jev.php`.
-- La chiave si può definire in `wp-config.php` (`define( 'FILI_API_KEY', '...' );`) oppure nelle impostazioni, dove non viene mai rimostrata per intero.
-- Un tetto di spesa mensile ferma tutto quando lo raggiungi, e la spesa è in vista su ogni schermata.
-- Niente caratteri o script caricati da fuori: l'interfaccia usa solo ciò che c'è già in WordPress.
+**On your content**
 
-## Cosa abbiamo misurato, compresi gli errori
+- It never writes without approval. Freshly installed the safety catch is on, so it cannot touch a post at all.
+- The anchor is text that already exists, word for word, outside any existing link, heading, quote, caption, code block, shortcode or Gutenberg comment.
+- At most three new links per post, never to itself, never where a link already exists, never between duplicates, never a link inside another link.
+- Every change is a WordPress revision and undoes back to a byte-identical post.
+- The modified date moves, because [Google counts a change to a page's links as a significant update](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap) and an inaccurate `lastmod` is worse than none. Undo restores the original date too.
 
-Tutti i numeri vengono da un sito vero di 777 articoli, su un banco di prova con PHP limitato a 128 MB come un hosting condiviso.
+**On quality**
 
-**I tempi, detti per quello che sono.** Il tempo non è di Jev, che risponde in una frazione di secondo: è l'attesa della rete.
+- Rules a machine verifies better than a model live in the code: a verb inside the anchor, a fragment starting on a preposition, the site's own boilerplate. Jev is left to do the one thing that needs reading.
+- **The threshold is measured on your site.** After twenty judged proposals, Fili works out the score above which you kept at least 85%. There is no number that is right for everyone.
 
-| Come | Tempo per i link di 777 articoli |
+**On privacy**
+
+- Only the title and text of **already public** content leave your site. Drafts and private posts are never read.
+- Fili talks to one service: the one you choose, with your key. **No telemetry, no external fonts or scripts.** One file makes network calls, `includes/class-fili-jev.php`. Read it.
+- The key goes in `wp-config.php` (recommended) or in the database, shown masked and never printed back in full. You can move it between the two from the settings screen, and the plugin leaves no copy of `wp-config.php` in your site folder: a copy there is downloadable by anyone who guesses the name.
+- A monthly spending cap stops everything when reached, and the spend is visible on every screen.
+
+## What we measured, mistakes included
+
+All figures come from a real 777-post site, on a bench with PHP capped at 128 MB like shared hosting.
+
+**Timing, stated honestly.** The time is not Jev's, which answers in a fraction of a second: it is network waiting.
+
+| How | Time for the links of 777 posts |
 |---|---|
-| Prototipo esterno, 24 richieste insieme, via OpenRouter | 16 secondi |
-| Prototipo esterno, 24 richieste insieme, API ufficiale TypeSafe | 145 secondi |
-| Fili dentro WordPress, 1 richiesta alla volta | circa 12 minuti |
-| Fili dentro WordPress, 4 richieste insieme (il valore di partenza) | circa 4 minuti, estrapolato da 60 articoli misurati |
+| External prototype, 24 requests in parallel, via OpenRouter | 16 seconds |
+| External prototype, 24 in parallel, official TypeSafe API | 145 seconds |
+| Fili inside WordPress, one request at a time | about 12 minutes |
+| Fili inside WordPress, four in parallel (the default) | about 4 minutes, extrapolated from 60 measured posts |
 
-Il costo è lo stesso in tutti i casi: si pagano i caratteri letti, non il tempo. Dopo il primo giro Fili lavora solo sugli articoli nuovi.
+The cost is the same in every case: you pay for the characters read, not for the time.
 
-**La qualità.** La prima versione delle domande dava il **64%** di proposte da tenere. Riscrivendo le domande sui casi bocciati: **91%** (20 su 22 in un campione riletto a mano).
+**Quality.** The first version of the questions gave **64%** of proposals worth keeping. Rewriting the questions against the rejected cases: **91%** (20 out of 22 in a hand-read sample).
 
-**La retromarcia.** Su sei articoli, tre Gutenberg e tre classici: link applicati, poi annullati, e il contenuto è tornato **identico al byte sei volte su sei**, con i blocchi intatti e nessun link dentro un altro link.
+**Undo.** On six posts, three Gutenberg and three classic: links applied, then undone, and the content came back **byte-identical six times out of six**, blocks intact, no link nested inside another.
 
-**Gli errori.**
-- Usare la frequenza di una frase nel sito come misura di qualità **non funziona**: serve solo a riconoscere il boilerplate (una riga di firma presente in 430 articoli su 777).
-- Di tre domande scritte per distinguere un doppione da un seguito legittimo, **due erano inutili**: una rispondeva sempre sì, l'altra sempre no. Una domanda si giudica da come si distribuiscono le risposte, non da come è scritta.
-- I controlli di forma sono **per lingua**. Quelli italiani sono tarati su un sito vero; quelli inglesi sono una prima stesura non ancora misurata.
-- La spesa mostrata è una **stima** calcolata sui caratteri inviati, perché l'API ufficiale non comunica il costo. Sul giro completo ha dato 29 centesimi contro i 26 misurati per altra via.
+**The mistakes**
 
-## Installazione
+- Using how often a phrase occurs on the site as a measure of quality **does not work**: it only identifies boilerplate (a signature line present in 430 of 777 posts).
+- Of three questions written to tell a duplicate from a genuine follow-up, **two were useless**: one always answered yes, the other always no. A question is judged by how its answers spread out, not by how it is worded.
+- The `confidence` a `choice` question returns measures how clear-cut the pick was, not whether it is right: across 6,202 picks the median was 0.63 where the link was strong and 0.55 where it was weak.
+- The spend shown is an **estimate** from the characters sent, because the official API does not report the cost. On a full run it said $0.29 against $0.26 measured another way.
 
-Copia la cartella `fili/` in `wp-content/plugins/`, attiva il plugin, inserisci la chiave in *Fili → Impostazioni*, avvia il giro.
+## What it found on the site it was built for
 
-Da riga di comando: `wp fili run`, `wp fili status`, `wp fili roundtrip <id>...` (applica, annulla e verifica che l'articolo torni identico).
+- **48 groups of posts about the same piece of news**, 16 of them with three or more, the worst with five in six days.
+- The two halves of the site barely speak to each other: 190 posts up to 2021 about photography, 439 from 2025 about AI, and **one single proposal crossing between them out of 223**.
+- Two typos, found because an anchor landed on them.
 
-## Licenza
+## Install
 
-MIT. Usalo, modificalo, ridistribuiscilo: basta mantenere la nota di copyright.
+Copy the `fili/` folder into `wp-content/plugins/`, activate it, put your key in *Fili → Settings*, start the run.
 
-Fili non è affiliato a TypeSafe AI. Jev è un loro prodotto.
+**Requirements**: WordPress 6.4+, PHP 8.0+, a [TypeSafe](https://typesafe.ai) or [OpenRouter](https://openrouter.ai) API key.
+
+From the command line: `wp fili run`, `wp fili status`, `wp fili roundtrip <id>...` (applies, undoes and checks the post came back identical).
+
+## Languages
+
+The interface ships in **English** and **Italian** and follows the site language. Translations live in `languages/`; to add one, copy `fili-it_IT.po` and translate it.
+
+The code-level checks (verbs, prepositions, question words) are per language, in `lang/`. The Italian list is tuned on a real site; the English one is a first draft that has not been measured. On a site in any other language those checks catch nothing and quality falls back towards 64%, so Fili says so rather than pretending otherwise.
+
+## Licence
+
+MIT. Use it, change it, redistribute it: just keep the copyright notice.
+
+Fili is not affiliated with TypeSafe AI. Jev is their product.

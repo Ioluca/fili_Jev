@@ -1,21 +1,22 @@
 <?php
 /**
  * Plugin Name:       Fili
- * Description:       Trova i link interni che mancano e gli articoli che raccontano due volte la stessa notizia. Propone, non scrive: ogni link lo approvi tu e si annulla con un clic.
- * Version:           0.1.4
+ * Description:       Finds the internal links your site is missing and the posts that tell the same news twice. It proposes, it does not write: you approve every link, and one click undoes it.
+ * Version:           0.1.5
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Luca Cazzaniga
  * License:           MIT
  * License URI:       https://opensource.org/licenses/MIT
  * Text Domain:       fili
+ * Domain Path:       /languages
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FILI_VERSION', '0.1.4' );
+define( 'FILI_VERSION', '0.1.5' );
 define( 'FILI_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FILI_URL', plugin_dir_url( __FILE__ ) );
 
@@ -31,6 +32,10 @@ require_once FILI_DIR . 'includes/class-fili-key.php';
 register_activation_hook( __FILE__, array( 'Fili_DB', 'install' ) );
 register_deactivation_hook( __FILE__, array( 'Fili_Queue', 'stop' ) );
 
+add_action( 'init', function () {
+	// The code speaks English; Italian and anything else come from languages/.
+	load_plugin_textdomain( 'fili', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+} );
 add_action( 'admin_init', array( 'Fili_DB', 'maybe_upgrade' ) );
 add_action( 'fili_apply_batch', array( 'Fili_Queue', 'run' ) );
 

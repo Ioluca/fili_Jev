@@ -70,7 +70,7 @@ final class Fili_Engine {
 		}
 		if ( ( $s['total'] ?? 0 ) < self::MIN_POSTS ) {
 			$s['phase'] = 'idle';
-			$s['error'] = __( 'Servono almeno 10 articoli pubblicati per trovare dei legami.', 'fili' );
+			$s['error'] = __( 'At least 10 published posts are needed to find any connections.', 'fili' );
 			return self::save( $s );
 		}
 		// One worker at a time. add_option() is atomic: it fails when the row exists, so an

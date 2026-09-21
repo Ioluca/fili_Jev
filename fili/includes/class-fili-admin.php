@@ -18,10 +18,10 @@ final class Fili_Admin {
 
 	public static function menu(): void {
 		add_menu_page( 'Fili', 'Fili', self::CAP, 'fili', array( __CLASS__, 'page_run' ), 'dashicons-admin-links', 58 );
-		add_submenu_page( 'fili', __( 'Il giro', 'fili' ), __( 'Il giro', 'fili' ), self::CAP, 'fili', array( __CLASS__, 'page_run' ) );
-		add_submenu_page( 'fili', __( 'Proposte', 'fili' ), __( 'Proposte', 'fili' ), self::CAP, 'fili-proposals', array( __CLASS__, 'page_proposals' ) );
-		add_submenu_page( 'fili', __( 'Doppioni', 'fili' ), __( 'Doppioni', 'fili' ), self::CAP, 'fili-duplicates', array( __CLASS__, 'page_duplicates' ) );
-		add_submenu_page( 'fili', __( 'Impostazioni', 'fili' ), __( 'Impostazioni', 'fili' ), self::CAP, 'fili-settings', array( __CLASS__, 'page_settings' ) );
+		add_submenu_page( 'fili', __( 'The run', 'fili' ), __( 'The run', 'fili' ), self::CAP, 'fili', array( __CLASS__, 'page_run' ) );
+		add_submenu_page( 'fili', __( 'Proposals', 'fili' ), __( 'Proposals', 'fili' ), self::CAP, 'fili-proposals', array( __CLASS__, 'page_proposals' ) );
+		add_submenu_page( 'fili', __( 'Duplicates', 'fili' ), __( 'Duplicates', 'fili' ), self::CAP, 'fili-duplicates', array( __CLASS__, 'page_duplicates' ) );
+		add_submenu_page( 'fili', __( 'Settings', 'fili' ), __( 'Settings', 'fili' ), self::CAP, 'fili-settings', array( __CLASS__, 'page_settings' ) );
 	}
 
 	public static function assets( string $hook ): void {
@@ -31,16 +31,46 @@ final class Fili_Admin {
 		wp_enqueue_style( 'fili', FILI_URL . 'assets/fili.css', array(), FILI_VERSION );
 		wp_enqueue_script( 'fili', FILI_URL . 'assets/fili.js', array(), FILI_VERSION, true );
 		wp_localize_script( 'fili', 'FILI', array(
-			'ajax'  => admin_url( 'admin-ajax.php' ),
-			'nonce' => wp_create_nonce( 'fili' ),
-			'state' => Fili_Engine::state(),
-			'queue' => self::queue_state(),
+			'ajax'   => admin_url( 'admin-ajax.php' ),
+			'nonce'  => wp_create_nonce( 'fili' ),
+			'state'  => Fili_Engine::state(),
+			'queue'  => self::queue_state(),
+			'locale' => str_replace( '_', '-', get_user_locale() ),
+			// the script says nothing in any language of its own: every line it shows
+			// comes from here, so it is translated like the rest of the plugin
+			'i18n'   => array(
+				'phaseIdle'        => __( 'Stopped.', 'fili' ),
+				'phaseIndex'       => __( 'Reading the posts and building the index…', 'fili' ),
+				'phaseFinalize'    => __( 'Weighing the words…', 'fili' ),
+				'phasePropose'     => __( 'Asking Jev which connections hold…', 'fili' ),
+				'phasePairsFind'   => __( 'Looking for posts that resemble each other too closely…', 'fili' ),
+				'phasePairsJudge'  => __( 'Asking Jev which ones tell the same news…', 'fili' ),
+				'phaseDone'        => __( 'Done. The proposals are waiting for you.', 'fili' ),
+				'busyElsewhere'    => __( '(another process is already working: just watching)', 'fili' ),
+				'minutes'          => __( 'minutes', 'fili' ),
+				'hours'            => __( 'hours', 'fili' ),
+				'days'             => __( 'days', 'fili' ),
+				'queueEmpty'       => __( 'Nothing left to apply.', 'fili' ),
+				/* translators: 1: time of the next batch, 2: how long until the end */
+				'queueRunning'     => __( 'Running. Next batch at %1$s, finishing in about %2$s.', 'fili' ),
+				/* translators: %s: how long it would take */
+				'queuePaused'      => __( 'Paused. Started now, it would finish in about %s.', 'fili' ),
+				/* translators: %d: how many proposals */
+				'undoKept'         => __( 'Kept %d. Undo', 'fili' ),
+				/* translators: %d: how many proposals */
+				'undoDropped'      => __( 'Dropped %d. Undo', 'fili' ),
+				/* translators: %d: how many proposals */
+				'confirmKeepAll'   => __( "Keep all %d proposals, not just the ones on this page?\n\nNothing is applied to the site: you can change your mind afterwards.", 'fili' ),
+				/* translators: %d: how many proposals */
+				'confirmDropAll'   => __( "Drop all %d proposals, not just the ones on this page?\n\nNothing is applied to the site: you can change your mind afterwards.", 'fili' ),
+				'confirmKeyDelete' => __( "Remove the key?\n\nFili stops proposing until you enter another one. Links already applied stay where they are.", 'fili' ),
+			),
 		) );
 	}
 
 	private static function guard(): void {
 		if ( ! current_user_can( self::CAP ) || ! check_ajax_referer( 'fili', 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Non autorizzato.', 'fili' ) ), 403 );
+			wp_send_json_error( array( 'message' => __( 'Not allowed.', 'fili' ) ), 403 );
 		}
 	}
 
@@ -53,7 +83,7 @@ final class Fili_Admin {
 	public static function ajax_start(): void {
 		self::guard();
 		if ( '' === fili_api_key() ) {
-			wp_send_json_error( array( 'message' => __( 'Prima inserisci la chiave API nelle impostazioni.', 'fili' ) ) );
+			wp_send_json_error( array( 'message' => __( 'Add your API key in the settings first.', 'fili' ) ) );
 		}
 		wp_send_json_success( self::state_out( Fili_Engine::start() ) );
 	}
@@ -124,7 +154,7 @@ final class Fili_Admin {
 		self::guard();
 		$k = fili_api_key();
 		if ( '' === $k ) {
-			wp_send_json_error( array( 'message' => __( 'Non c\'è nessuna chiave salvata.', 'fili' ) ) );
+			wp_send_json_error( array( 'message' => __( 'There is no saved key.', 'fili' ) ) );
 		}
 		wp_send_json_success( array( 'line' => Fili_Key::line( $k ) ) );
 	}
@@ -158,7 +188,7 @@ final class Fili_Admin {
 		self::guard();
 		$t = self::measured_threshold();
 		if ( null === $t ) {
-			wp_send_json_error( array( 'message' => __( 'Servono almeno 20 proposte giudicate.', 'fili' ) ) );
+			wp_send_json_error( array( 'message' => __( 'At least 20 judged proposals are needed.', 'fili' ) ) );
 		}
 		$s              = fili_settings();
 		$s['threshold'] = $t;
@@ -199,33 +229,33 @@ final class Fili_Admin {
 		echo '<div class="wrap fili"><header class="fili-head"><div class="fili-top"><p class="fili-eyebrow">Fili</p>';
 		printf(
 			'<dl class="fili-spend" title="%s"><div><dt>%s</dt><dd>$%s</dd></div><div><dt>%s</dt><dd>$%s <span>/ $%s</span></dd></div><div><dt>%s</dt><dd>$%s</dd></div></dl>',
-			esc_attr__( 'Stima calcolata da Fili sui caratteri inviati: il servizio ufficiale non comunica il costo.', 'fili' ),
-			esc_html__( 'ultimo giro', 'fili' ), esc_html( number_format_i18n( $run, 4 ) ),
-			esc_html__( 'questo mese', 'fili' ), esc_html( number_format_i18n( $month, 4 ) ), esc_html( number_format_i18n( $budget, 2 ) ),
-			esc_html__( 'da sempre', 'fili' ), esc_html( number_format_i18n( array_sum( array_map( 'floatval', (array) $spend ) ), 4 ) )
+			esc_attr__( 'Estimated by Fili from the characters sent: the official service does not report the cost.', 'fili' ),
+			esc_html__( 'last run', 'fili' ), esc_html( number_format_i18n( $run, 4 ) ),
+			esc_html__( 'this month', 'fili' ), esc_html( number_format_i18n( $month, 4 ) ), esc_html( number_format_i18n( $budget, 2 ) ),
+			esc_html__( 'all time', 'fili' ), esc_html( number_format_i18n( array_sum( array_map( 'floatval', (array) $spend ) ), 4 ) )
 		);
 		echo '</div><h1>' . esc_html( $title ) . '</h1><p class="fili-lead">' . esc_html( $lead ) . '</p></header>';
 	}
 
 	public static function page_run(): void {
-		self::head( __( 'Il giro', 'fili' ), __( 'Fili legge gli articoli pubblicati, cerca quali si parlano fra loro e prepara le proposte. In questa fase non tocca nessun articolo.', 'fili' ) );
+		self::head( __( 'The run', 'fili' ), __( 'Fili reads your published posts, works out which ones belong together and prepares the proposals. It touches no post at this stage.', 'fili' ) );
 		$ro = ! empty( fili_settings()['read_only'] );
 		?>
 		<section class="fili-panel">
 			<div class="fili-tiles">
-				<div class="fili-tile"><b id="fili-indexed">0</b><span><?php esc_html_e( 'articoli letti', 'fili' ); ?></span></div>
-				<div class="fili-tile"><b id="fili-judged">0</b><span><?php esc_html_e( 'articoli giudicati', 'fili' ); ?></span></div>
-				<div class="fili-tile"><b id="fili-decisions">0</b><span><?php esc_html_e( 'decisioni di Jev', 'fili' ); ?></span></div>
+				<div class="fili-tile"><b id="fili-indexed">0</b><span><?php esc_html_e( 'posts read', 'fili' ); ?></span></div>
+				<div class="fili-tile"><b id="fili-judged">0</b><span><?php esc_html_e( 'posts judged', 'fili' ); ?></span></div>
+				<div class="fili-tile"><b id="fili-decisions">0</b><span><?php esc_html_e( 'Jev decisions', 'fili' ); ?></span></div>
 				<div class="fili-tile"><b id="fili-spend">$0</b><span id="fili-budget"></span></div>
 			</div>
 			<div class="fili-bar"><i id="fili-progress"></i></div>
 			<p class="fili-phase" id="fili-phase"></p>
 			<p class="fili-actions">
-				<button class="fili-btn fili-btn-go" id="fili-start"><?php esc_html_e( 'Avvia il giro', 'fili' ); ?></button>
-				<button class="fili-btn" id="fili-stop" hidden><?php esc_html_e( 'Ferma', 'fili' ); ?></button>
+				<button class="fili-btn fili-btn-go" id="fili-start"><?php esc_html_e( 'Start the run', 'fili' ); ?></button>
+				<button class="fili-btn" id="fili-stop" hidden><?php esc_html_e( 'Stop', 'fili' ); ?></button>
 			</p>
 			<p class="fili-note" id="fili-error" hidden></p>
-			<p class="fili-note"><?php echo $ro ? esc_html__( 'Sicura inserita: Fili può solo proporre.', 'fili' ) : esc_html__( 'Sicura tolta: i link approvati si possono applicare.', 'fili' ); ?></p>
+			<p class="fili-note"><?php echo $ro ? esc_html__( 'Safety catch on: Fili can only propose.', 'fili' ) : esc_html__( 'Safety catch off: approved links can be applied.', 'fili' ); ?></p>
 		</section></div>
 		<?php
 	}
@@ -244,18 +274,18 @@ final class Fili_Admin {
 		$counts = $wpdb->get_results( $wpdb->prepare( 'SELECT status, COUNT(*) n FROM ' . Fili_DB::t( 'proposals' ) . " WHERE status<>'proposed' OR score>=%f GROUP BY status", (float) $s['threshold'] ), OBJECT_K ); // phpcs:ignore
 		$sugg   = self::measured_threshold();
 
-		self::head( __( 'Proposte', 'fili' ), __( 'Ogni frase evidenziata esiste già nell\'articolo. Tieni o butta: niente cambia sul sito finché non applichi.', 'fili' ) );
+		self::head( __( 'Proposals', 'fili' ), __( 'Every highlighted phrase is already in the post. Keep it or drop it: nothing changes on the site until you apply.', 'fili' ) );
 		echo '<nav class="fili-tabs">';
-		foreach ( array( 'proposed' => __( 'Da vedere', 'fili' ), 'approved' => __( 'Tenute', 'fili' ), 'applied' => __( 'Applicate', 'fili' ), 'rejected' => __( 'Buttate', 'fili' ) ) as $k => $label ) {
+		foreach ( array( 'proposed' => __( 'To review', 'fili' ), 'approved' => __( 'Kept', 'fili' ), 'applied' => __( 'Applied', 'fili' ), 'rejected' => __( 'Dropped', 'fili' ) ) as $k => $label ) {
 			printf( '<a class="%s" href="%s">%s <span data-count="%s">%d</span></a>', $k === $view ? 'on' : '', esc_url( admin_url( 'admin.php?page=fili-proposals&view=' . $k ) ), esc_html( $label ), esc_attr( $k ), (int) ( $counts[ $k ]->n ?? 0 ) );
 		}
 		echo '</nav>';
 
-		printf( '<p class="fili-note">%s <b>%s</b>. ', esc_html__( 'Soglia in uso:', 'fili' ), esc_html( number_format_i18n( (float) $s['threshold'], 2 ) ) );
+		printf( '<p class="fili-note">%s <b>%s</b>. ', esc_html__( 'Threshold in use:', 'fili' ), esc_html( number_format_i18n( (float) $s['threshold'], 2 ) ) );
 		if ( null !== $sugg ) {
-			printf( '%s <b>%s</b>. <button class="fili-link" id="fili-adopt">%s</button>', esc_html__( 'Sulle tue decisioni la soglia misurata è', 'fili' ), esc_html( number_format_i18n( $sugg, 2 ) ), esc_html__( 'Usa questa', 'fili' ) );
+			printf( '%s <b>%s</b>. <button class="fili-link" id="fili-adopt">%s</button>', esc_html__( 'Measured on your decisions, the threshold is', 'fili' ), esc_html( number_format_i18n( $sugg, 2 ) ), esc_html__( 'Use this one', 'fili' ) );
 		} else {
-			esc_html_e( 'Giudica almeno 20 proposte e Fili misura la soglia giusta per questo sito.', 'fili' );
+			esc_html_e( 'Judge at least 20 proposals and Fili measures the right threshold for this site.', 'fili' );
 		}
 		echo '</p>';
 
@@ -263,7 +293,7 @@ final class Fili_Admin {
 			self::queue_panel();
 		}
 		if ( ! $rows ) {
-			echo '<p class="fili-empty">' . esc_html__( 'Niente qui, per ora.', 'fili' ) . '</p></div>';
+			echo '<p class="fili-empty">' . esc_html__( 'Nothing here yet.', 'fili' ) . '</p></div>';
 			return;
 		}
 		echo '<div class="fili-toolbar" data-view="' . esc_attr( $view ) . '">';
@@ -273,15 +303,15 @@ final class Fili_Admin {
 				printf(
 					'<button class="fili-btn fili-btn-go" data-every="%s" data-from="%s" data-n="%d">%s</button>',
 					esc_attr( $all_to ), esc_attr( $view ), $total,
-					esc_html( sprintf( 'approved' === $all_to ? __( 'Tieni tutte e %d', 'fili' ) : __( 'Butta tutte e %d', 'fili' ), $total ) )
+					esc_html( sprintf( 'approved' === $all_to ? __( 'Keep all %d', 'fili' ) : __( 'Drop all %d', 'fili' ), $total ) )
 				);
 			}
 			printf(
 				'<button class="fili-btn" data-bulk-all="%s">%s</button>',
 				esc_attr( $all_to ),
-				esc_html( sprintf( 'approved' === $all_to ? __( 'Tieni le %d in pagina', 'fili' ) : __( 'Butta le %d in pagina', 'fili' ), count( $rows ) ) )
+				esc_html( sprintf( 'approved' === $all_to ? __( 'Keep the %d on this page', 'fili' ) : __( 'Drop the %d on this page', 'fili' ), count( $rows ) ) )
 			);
-			echo '<span class="fili-sep"></span><button class="fili-btn" data-bulk="approved">' . esc_html__( 'Tieni le selezionate', 'fili' ) . '</button><button class="fili-btn" data-bulk="rejected">' . esc_html__( 'Butta le selezionate', 'fili' ) . '</button>';
+			echo '<span class="fili-sep"></span><button class="fili-btn" data-bulk="approved">' . esc_html__( 'Keep selected', 'fili' ) . '</button><button class="fili-btn" data-bulk="rejected">' . esc_html__( 'Drop selected', 'fili' ) . '</button>';
 		}
 		echo '<button class="fili-link" id="fili-undo-last" hidden></button></div><ul class="fili-list">';
 		foreach ( $rows as $r ) {
@@ -290,21 +320,21 @@ final class Fili_Admin {
 			$ctx = $a ? preg_replace( '/' . preg_quote( $a, '/' ) . '/u', '<mark>' . $a . '</mark>', $ctx, 1 ) : $ctx;
 			printf(
 				'<li class="fili-row" data-id="%d"><input type="checkbox" class="fili-pick" value="%d" aria-label="%s"><div class="fili-body"><p class="fili-pair"><span class="fili-score">%s</span><a href="%s" target="_blank" rel="noopener">%s</a><span class="fili-arrow">→</span><a class="to" href="%s" target="_blank" rel="noopener">%s</a></p><p class="fili-ctx">%s</p></div><div class="fili-do">',
-				(int) $r->id, (int) $r->id, esc_attr__( 'seleziona', 'fili' ),
+				(int) $r->id, (int) $r->id, esc_attr__( 'select', 'fili' ),
 				esc_html( number_format_i18n( (float) $r->score, 2 ) ),
 				esc_url( get_permalink( (int) $r->source_id ) ), esc_html( get_the_title( (int) $r->source_id ) ),
 				esc_url( get_permalink( (int) $r->target_id ) ), esc_html( get_the_title( (int) $r->target_id ) ),
 				$ctx // phpcs:ignore -- escaped above, only <mark> added
 			);
 			if ( 'applied' === $view ) {
-				echo '<button class="fili-btn" data-undo>' . esc_html__( 'Annulla', 'fili' ) . '</button>';
+				echo '<button class="fili-btn" data-undo>' . esc_html__( 'Undo', 'fili' ) . '</button>';
 			} else {
 				if ( 'approved' === $view ) {
-					echo '<button class="fili-btn fili-btn-go" data-apply>' . esc_html__( 'Applica', 'fili' ) . '</button>';
+					echo '<button class="fili-btn fili-btn-go" data-apply>' . esc_html__( 'Apply', 'fili' ) . '</button>';
 				} else {
-					echo '<button class="fili-btn fili-btn-go" data-to="approved">' . esc_html__( 'Tieni', 'fili' ) . '</button>';
+					echo '<button class="fili-btn fili-btn-go" data-to="approved">' . esc_html__( 'Keep', 'fili' ) . '</button>';
 				}
-				echo '<button class="fili-btn" data-to="rejected">' . esc_html__( 'Butta', 'fili' ) . '</button>';
+				echo '<button class="fili-btn" data-to="rejected">' . esc_html__( 'Drop', 'fili' ) . '</button>';
 			}
 			echo '</div></li>';
 		}
@@ -318,40 +348,40 @@ final class Fili_Admin {
 		$ro  = ! empty( $s['read_only'] );
 		$n   = Fili_Queue::pending();
 		echo '<section class="fili-queue" id="fili-queue">';
-		echo '<p class="fili-eyebrow">' . esc_html__( 'Applicazione graduale', 'fili' ) . '</p>';
+		echo '<p class="fili-eyebrow">' . esc_html__( 'Gradual rollout', 'fili' ) . '</p>';
 		printf(
 			'<p class="fili-queue-lead">%s</p>',
 			esc_html( sprintf(
 				/* translators: 1: links waiting, 2: per batch, 3: minutes */
-				__( '%1$d link approvati in attesa. Fili ne applica %2$d ogni %3$d minuti, dagli articoli piu\' vecchi ai piu\' recenti.', 'fili' ),
+				__( '%1$d approved links waiting. Fili applies %2$d every %3$d minutes, oldest posts first.', 'fili' ),
 				$n, (int) $s['batch_size'], (int) $s['batch_minutes']
 			) )
 		);
 		echo '<p class="fili-queue-state" id="fili-queue-state"></p>';
 		if ( $ro ) {
-			echo '<p class="fili-note fili-err">' . esc_html__( 'La sicura è inserita: togliela nelle impostazioni per poter applicare.', 'fili' ) . '</p>';
+			echo '<p class="fili-note fili-err">' . esc_html__( 'The safety catch is on: turn it off in the settings to apply links.', 'fili' ) . '</p>';
 		} else {
-			echo '<p class="fili-actions"><button class="fili-btn fili-btn-go" id="fili-queue-go">' . esc_html__( 'Avvia l\'applicazione graduale', 'fili' ) . '</button>';
-			echo '<button class="fili-btn" id="fili-queue-stop" hidden>' . esc_html__( 'Metti in pausa', 'fili' ) . '</button></p>';
+			echo '<p class="fili-actions"><button class="fili-btn fili-btn-go" id="fili-queue-go">' . esc_html__( 'Start the gradual rollout', 'fili' ) . '</button>';
+			echo '<button class="fili-btn" id="fili-queue-stop" hidden>' . esc_html__( 'Pause', 'fili' ) . '</button></p>';
 		}
 		echo '<ul class="fili-queue-log" id="fili-queue-log"></ul>';
-		echo '<p class="fili-note">' . esc_html__( 'Il risveglio dipende dalle visite al sito: su un sito tranquillo la coda avanza un po\' piu\' tardi di quanto dice l\'intervallo, mai piu\' in fretta. Puoi mettere in pausa e riprendere quando vuoi.', 'fili' ) . '</p>';
+		echo '<p class="fili-note">' . esc_html__( 'Wake-ups depend on visits to the site: on a quiet site the queue runs a little later than the interval says, never faster. You can pause and resume whenever you like.', 'fili' ) . '</p>';
 		echo '</section>';
 	}
 
 	public static function page_duplicates(): void {
-		self::head( __( 'Doppioni', 'fili' ), __( 'Gruppi di articoli che raccontano la stessa notizia. Si contendono la stessa ricerca e nessun link rimedia: vanno uniti o distinti. Fili li segnala soltanto, non tocca niente.', 'fili' ) );
+		self::head( __( 'Duplicates', 'fili' ), __( 'Groups of posts telling the same piece of news. They compete for the same search and no internal link fixes that: merge them, or make them genuinely different. Fili only points them out, it changes nothing.', 'fili' ) );
 		$groups = Fili_Engine::duplicate_groups();
 		if ( ! $groups ) {
-			echo '<p class="fili-empty">' . esc_html__( 'Nessun gruppo trovato, o il giro non è ancora finito.', 'fili' ) . '</p></div>';
+			echo '<p class="fili-empty">' . esc_html__( 'No group found, or the run has not finished yet.', 'fili' ) . '</p></div>';
 			return;
 		}
-		printf( '<p class="fili-note">%s</p><ul class="fili-groups">', esc_html( sprintf( __( '%1$d gruppi, %2$d articoli. I seguiti veri, quelli che raccontano uno sviluppo successivo, sono già esclusi.', 'fili' ), count( $groups ), array_sum( array_map( 'count', $groups ) ) ) ) );
+		printf( '<p class="fili-note">%s</p><ul class="fili-groups">', esc_html( sprintf( __( '%1$d groups, %2$d posts. Genuine follow-ups, the ones reporting a later development, are already left out.', 'fili' ), count( $groups ), array_sum( array_map( 'count', $groups ) ) ) ) );
 		foreach ( $groups as $g ) {
 			usort( $g, static fn( $a, $b ) => strcmp( get_post_field( 'post_date', $a ), get_post_field( 'post_date', $b ) ) );
-			printf( '<li class="fili-group"><p class="fili-eyebrow">%s</p><ol>', esc_html( sprintf( __( '%d pezzi sulla stessa notizia', 'fili' ), count( $g ) ) ) );
+			printf( '<li class="fili-group"><p class="fili-eyebrow">%s</p><ol>', esc_html( sprintf( __( '%d posts about the same piece of news', 'fili' ), count( $g ) ) ) );
 			foreach ( $g as $id ) {
-				printf( '<li><span class="fili-date">%s</span><a href="%s" target="_blank" rel="noopener">%s</a> <a class="fili-edit" href="%s">%s</a></li>', esc_html( get_the_date( 'd/m/Y', $id ) ), esc_url( get_permalink( $id ) ), esc_html( get_the_title( $id ) ), esc_url( get_edit_post_link( $id ) ), esc_html__( 'modifica', 'fili' ) );
+				printf( '<li><span class="fili-date">%s</span><a href="%s" target="_blank" rel="noopener">%s</a> <a class="fili-edit" href="%s">%s</a></li>', esc_html( get_the_date( 'd/m/Y', $id ) ), esc_url( get_permalink( $id ) ), esc_html( get_the_title( $id ) ), esc_url( get_edit_post_link( $id ) ), esc_html__( 'edit', 'fili' ) );
 			}
 			echo '</ol></li>';
 		}
@@ -361,56 +391,56 @@ final class Fili_Admin {
 	public static function page_settings(): void {
 		$s   = fili_settings();
 		$key = fili_api_key();
-		self::head( __( 'Impostazioni', 'fili' ), __( 'Fili parla con un solo servizio: quello che scegli qui, con la tua chiave. Non manda niente a nessun altro.', 'fili' ) );
+		self::head( __( 'Settings', 'fili' ), __( 'Fili talks to one service only: the one you pick here, with your key. It sends nothing anywhere else.', 'fili' ) );
 		if ( ! empty( $_GET['errore'] ) ) { // phpcs:ignore
 			echo '<p class="fili-note fili-err">' . esc_html( sanitize_text_field( wp_unslash( $_GET['errore'] ) ) ) . '</p>'; // phpcs:ignore
 		} elseif ( isset( $_GET['saved'] ) ) { // phpcs:ignore
-			echo '<p class="fili-note fili-ok">' . esc_html__( 'Salvato.', 'fili' ) . '</p>';
+			echo '<p class="fili-note fili-ok">' . esc_html__( 'Saved.', 'fili' ) . '</p>';
 		}
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="fili-form">
 			<input type="hidden" name="action" value="fili_save"><?php wp_nonce_field( 'fili_save' ); ?>
 
-			<fieldset><legend><?php esc_html_e( 'Servizio e chiave', 'fili' ); ?></legend>
-				<label for="fili-route"><?php esc_html_e( 'Da dove passa', 'fili' ); ?></label>
+			<fieldset><legend><?php esc_html_e( 'Service and key', 'fili' ); ?></legend>
+				<label for="fili-route"><?php esc_html_e( 'Which service', 'fili' ); ?></label>
 				<select id="fili-route" name="route">
 					<option value="typesafe" <?php selected( $s['route'], 'typesafe' ); ?>>TypeSafe (API ufficiale)</option>
 					<option value="openrouter" <?php selected( $s['route'], 'openrouter' ); ?>>OpenRouter</option>
 				</select>
 				<?php
 				$in_config = Fili_Key::in_config();
-				$dove      = $in_config ? __( 'in wp-config.php', 'fili' ) : __( 'nel database del sito', 'fili' );
+				$dove      = $in_config ? __( 'in wp-config.php', 'fili' ) : __( 'in the site database', 'fili' );
 				?>
-				<label for="fili-key"><?php esc_html_e( 'Chiave API', 'fili' ); ?></label>
+				<label for="fili-key"><?php esc_html_e( 'API key', 'fili' ); ?></label>
 				<?php if ( $key ) : ?>
 					<div class="fili-key-now">
 						<code>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;<?php echo esc_html( substr( $key, -4 ) ); ?></code>
 						<span><?php
 						/* translators: %s: where the key is stored */
-						printf( esc_html__( 'in uso, salvata %s', 'fili' ), esc_html( $dove ) );
+						printf( esc_html__( 'in use, stored %s', 'fili' ), esc_html( $dove ) );
 						?></span>
-						<button type="button" class="fili-btn" id="fili-key-change"><?php esc_html_e( 'Cambia chiave', 'fili' ); ?></button>
+						<button type="button" class="fili-btn" id="fili-key-change"><?php esc_html_e( 'Change key', 'fili' ); ?></button>
 					</div>
 				<?php endif; ?>
 				<div id="fili-key-box" <?php echo $key ? 'hidden' : ''; ?>>
 					<input id="fili-key" type="password" name="api_key" autocomplete="off"
-						placeholder="<?php esc_attr_e( 'incolla qui la chiave nuova', 'fili' ); ?>">
+						placeholder="<?php esc_attr_e( 'paste the new key here', 'fili' ); ?>">
 					<p class="fili-key-where">
 						<label class="fili-check"><input type="radio" name="key_where" value="config" <?php checked( $in_config ); ?> <?php disabled( ! Fili_Key::config_writable() ); ?>>
 							<?php esc_html_e( 'in wp-config.php', 'fili' ); ?>
-							<em><?php echo Fili_Key::config_writable() ? esc_html__( 'consigliato: resta fuori dal database e dai suoi backup', 'fili' ) : esc_html__( 'non disponibile: il tuo hosting protegge il file', 'fili' ); ?></em>
+							<em><?php echo Fili_Key::config_writable() ? esc_html__( 'recommended: stays out of the database and out of its backups', 'fili' ) : esc_html__( 'not available: your host protects the file', 'fili' ); ?></em>
 						</label>
 						<label class="fili-check"><input type="radio" name="key_where" value="db" <?php checked( ! $in_config ); ?>>
-							<?php esc_html_e( 'nel database', 'fili' ); ?>
-							<em><?php esc_html_e( 'più semplice: la gestisci solo da qui', 'fili' ); ?></em>
+							<?php esc_html_e( 'in the database', 'fili' ); ?>
+							<em><?php esc_html_e( 'simpler: you manage it from here only', 'fili' ); ?></em>
 						</label>
 					</p>
-					<p class="fili-note"><?php esc_html_e( 'Salva per applicare. Fili scrive una riga sola in wp-config.php, controlla che il file resti valido prima di toccarlo e, se qualcosa non torna, lo rimette com\'era. Non lascia copie del file nella cartella del sito.', 'fili' ); ?></p>
+					<p class="fili-note"><?php esc_html_e( 'Save to apply. Fili writes a single line in wp-config.php, checks the file is still valid before touching it and puts it back as it was if anything is off. It leaves no copy of the file in your site folder.', 'fili' ); ?></p>
 					<?php if ( $key ) : ?>
 						<p class="fili-note">
-							<button type="button" class="fili-link" id="fili-key-del"><?php esc_html_e( 'Togli la chiave e ferma Fili', 'fili' ); ?></button>
+							<button type="button" class="fili-link" id="fili-key-del"><?php esc_html_e( 'Remove the key and stop Fili', 'fili' ); ?></button>
 							<?php if ( ! Fili_Key::config_writable() && $in_config ) : ?>
-								&middot; <button type="button" class="fili-link" id="fili-key-show"><?php esc_html_e( 'Mostra la riga da copiare a mano', 'fili' ); ?></button>
+								&middot; <button type="button" class="fili-link" id="fili-key-show"><?php esc_html_e( 'Show the line to copy by hand', 'fili' ); ?></button>
 							<?php endif; ?>
 						</p>
 						<pre class="fili-snippet" id="fili-key-snippet" hidden></pre>
@@ -418,45 +448,45 @@ final class Fili_Admin {
 				</div>
 			</fieldset>
 
-			<fieldset><legend><?php esc_html_e( 'Cosa legge', 'fili' ); ?></legend>
+			<fieldset><legend><?php esc_html_e( 'What it reads', 'fili' ); ?></legend>
 				<?php foreach ( get_post_types( array( 'public' => true ), 'objects' ) as $pt ) : if ( 'attachment' === $pt->name ) { continue; } ?>
 					<label class="fili-check"><input type="checkbox" name="post_types[]" value="<?php echo esc_attr( $pt->name ); ?>" <?php checked( in_array( $pt->name, (array) $s['post_types'], true ) ); ?>> <?php echo esc_html( $pt->labels->name ); ?></label>
 				<?php endforeach; ?>
-				<p class="fili-note"><?php esc_html_e( 'Solo contenuti già pubblicati. Bozze e contenuti privati non vengono mai letti né inviati.', 'fili' ); ?></p>
-				<label for="fili-lang"><?php esc_html_e( 'Lingua dei controlli', 'fili' ); ?></label>
+				<p class="fili-note"><?php esc_html_e( 'Published content only. Drafts and private content are never read and never sent.', 'fili' ); ?></p>
+				<label for="fili-lang"><?php esc_html_e( 'Language of the checks', 'fili' ); ?></label>
 				<select id="fili-lang" name="language">
 					<option value="it" <?php selected( $s['language'], 'it' ); ?>>Italiano (misurata su un sito vero)</option>
 					<option value="en" <?php selected( $s['language'], 'en' ); ?>>English (prima stesura, non ancora misurata)</option>
 				</select>
-				<label for="fili-themes"><?php esc_html_e( 'I temi fissi di questo sito', 'fili' ); ?></label>
+				<label for="fili-themes"><?php esc_html_e( 'This site\'s standing themes', 'fili' ); ?></label>
 				<textarea id="fili-themes" name="themes" rows="2" placeholder="'vibe coding', 'intelligenza artificiale', 'fotografia'"><?php echo esc_textarea( $s['themes'] ); ?></textarea>
-				<p class="fili-note"><?php esc_html_e( 'Le espressioni che usi in decine di articoli. Come ancora non indicano nessun articolo in particolare: scrivile qui, fra apici e separate da virgole, e Fili le scarta.', 'fili' ); ?></p>
+				<p class="fili-note"><?php esc_html_e( 'The phrases you use across dozens of posts. As an anchor they point at no post in particular: list them here, in quotes and separated by commas, and Fili drops them.', 'fili' ); ?></p>
 			</fieldset>
 
-			<fieldset><legend><?php esc_html_e( 'Limiti', 'fili' ); ?></legend>
-				<label for="fili-max"><?php esc_html_e( 'Link nuovi per articolo, al massimo', 'fili' ); ?></label>
+			<fieldset><legend><?php esc_html_e( 'Limits', 'fili' ); ?></legend>
+				<label for="fili-max"><?php esc_html_e( 'New links per post, at most', 'fili' ); ?></label>
 				<input id="fili-max" type="number" min="1" max="10" name="max_per_post" value="<?php echo esc_attr( (string) $s['max_per_post'] ); ?>">
-				<label for="fili-parallel"><?php esc_html_e( 'Richieste insieme', 'fili' ); ?></label>
+				<label for="fili-parallel"><?php esc_html_e( 'Requests in parallel', 'fili' ); ?></label>
 				<input id="fili-parallel" type="number" min="1" max="8" name="parallel" value="<?php echo esc_attr( (string) $s['parallel'] ); ?>">
-				<p class="fili-note"><?php esc_html_e( 'Quante domande Fili tiene in volo nello stesso momento. Il costo non cambia, cambia il tempo: con 1 un sito da 800 articoli impiega una dozzina di minuti, con 4 circa tre. Su un hosting condiviso fragile lascia 1 o 2.', 'fili' ); ?></p>
-				<label for="fili-batch"><?php esc_html_e( 'Link applicati per volta', 'fili' ); ?></label>
+				<p class="fili-note"><?php esc_html_e( 'How many questions Fili keeps in flight at once. The cost does not change, the time does: at 1 an 800-post site takes about a dozen minutes, at 4 around three. On fragile shared hosting leave it at 1 or 2.', 'fili' ); ?></p>
+				<label for="fili-batch"><?php esc_html_e( 'Links applied per batch', 'fili' ); ?></label>
 				<input id="fili-batch" type="number" min="1" max="50" name="batch_size" value="<?php echo esc_attr( (string) $s['batch_size'] ); ?>">
-				<label for="fili-minutes"><?php esc_html_e( 'Ogni quanti minuti', 'fili' ); ?></label>
+				<label for="fili-minutes"><?php esc_html_e( 'How many minutes between batches', 'fili' ); ?></label>
 				<input id="fili-minutes" type="number" min="5" max="1440" name="batch_minutes" value="<?php echo esc_attr( (string) $s['batch_minutes'] ); ?>">
-				<p class="fili-note"><?php esc_html_e( 'I link approvati si applicano un po\' alla volta invece che tutti insieme. Serve soprattutto a limitare i danni se qualcosa non va: un errore si vede su dieci articoli, non su duecento. In piu\' la data di modifica degli articoli si distribuisce nel tempo, e la mappa del sito racconta un sito curato invece di duecento pagine cambiate in un minuto. Google non penalizza i link interni verso le proprie pagine: questa e\' prudenza, non una sua regola.', 'fili' ); ?></p>
-				<label for="fili-budget-in"><?php esc_html_e( 'Tetto di spesa al mese, in dollari', 'fili' ); ?></label>
+				<p class="fili-note"><?php esc_html_e( 'Approved links go in a few at a time instead of all at once. Mostly this limits the damage when something is wrong: a mistake shows up on ten posts, not on two hundred. It also spreads the modified dates, so your sitemap reads as a site being tended rather than two hundred pages changed in one minute. Google does not penalise internal links to your own pages: this is our caution, not a rule of theirs.', 'fili' ); ?></p>
+				<label for="fili-budget-in"><?php esc_html_e( 'Monthly spending cap, in dollars', 'fili' ); ?></label>
 				<input id="fili-budget-in" type="number" min="0.05" step="0.05" name="monthly_budget" value="<?php echo esc_attr( (string) $s['monthly_budget'] ); ?>">
-				<p class="fili-note"><?php echo esc_html( sprintf( __( 'Speso questo mese, stimato: $%s. Un sito da 800 articoli costa circa 30 centesimi per il primo giro completo.', 'fili' ), number_format_i18n( Fili_Jev::month_spend(), 4 ) ) ); ?></p>
-				<label class="fili-check"><input type="checkbox" name="read_only" value="1" <?php checked( ! empty( $s['read_only'] ) ); ?>> <?php esc_html_e( 'Sicura inserita: Fili può solo proporre, non può modificare nessun articolo', 'fili' ); ?></label>
+				<p class="fili-note"><?php echo esc_html( sprintf( __( 'Spent this month, estimated: $%s. An 800-post site costs around 30 cents for the first full run.', 'fili' ), number_format_i18n( Fili_Jev::month_spend(), 4 ) ) ); ?></p>
+				<label class="fili-check"><input type="checkbox" name="read_only" value="1" <?php checked( ! empty( $s['read_only'] ) ); ?>> <?php esc_html_e( 'Safety catch on: Fili can only propose, it cannot change any post', 'fili' ); ?></label>
 			</fieldset>
-			<p><button class="fili-btn fili-btn-go"><?php esc_html_e( 'Salva', 'fili' ); ?></button></p>
+			<p><button class="fili-btn fili-btn-go"><?php esc_html_e( 'Save', 'fili' ); ?></button></p>
 		</form></div>
 		<?php
 	}
 
 	public static function save_settings(): void {
 		if ( ! current_user_can( self::CAP ) ) {
-			wp_die( esc_html__( 'Non autorizzato.', 'fili' ) );
+			wp_die( esc_html__( 'Not allowed.', 'fili' ) );
 		}
 		check_admin_referer( 'fili_save' );
 		$s                   = fili_settings();

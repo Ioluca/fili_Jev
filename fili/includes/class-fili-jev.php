@@ -19,13 +19,13 @@ final class Fili_Jev {
 	public static function ask( $state, array $questions ) {
 		$key = fili_api_key();
 		if ( '' === $key ) {
-			return new WP_Error( 'fili_no_key', __( 'Manca la chiave API.', 'fili' ) );
+			return new WP_Error( 'fili_no_key', __( 'The API key is missing.', 'fili' ) );
 		}
 		$route = self::ROUTES[ fili_settings()['route'] ] ?? self::ROUTES['typesafe'];
 		$body  = wp_json_encode( array( 'state' => $state, 'model' => $route['model'], 'questions' => $questions ) );
 
 		if ( self::month_spend() + self::estimate( $body ) > (float) fili_settings()['monthly_budget'] ) {
-			return new WP_Error( 'fili_budget', __( 'Tetto di spesa mensile raggiunto: Fili si ferma qui.', 'fili' ) );
+			return new WP_Error( 'fili_budget', __( 'Monthly spending cap reached: Fili stops here.', 'fili' ) );
 		}
 
 		for ( $attempt = 0; $attempt < 3; $attempt++ ) {
@@ -48,12 +48,12 @@ final class Fili_Jev {
 			}
 			$data = json_decode( wp_remote_retrieve_body( $r ), true );
 			if ( ! is_array( $data ) || ! isset( $data['answers'] ) ) {
-				return new WP_Error( 'fili_shape', __( 'Risposta inattesa dal servizio.', 'fili' ) );
+				return new WP_Error( 'fili_shape', __( 'Unexpected response from the service.', 'fili' ) );
 			}
 			self::record_spend( (float) ( $data['usage']['cost'] ?? 0 ) ?: self::estimate( $body ) );
 			return $data['answers'];
 		}
-		return new WP_Error( 'fili_retry', __( 'Il servizio è occupato, riprova più tardi.', 'fili' ) );
+		return new WP_Error( 'fili_retry', __( 'The service is busy, try again later.', 'fili' ) );
 	}
 
 	/**
@@ -71,7 +71,7 @@ final class Fili_Jev {
 		}
 		$key = fili_api_key();
 		if ( '' === $key ) {
-			return array_fill_keys( array_keys( $jobs ), new WP_Error( 'fili_no_key', __( 'Manca la chiave API.', 'fili' ) ) );
+			return array_fill_keys( array_keys( $jobs ), new WP_Error( 'fili_no_key', __( 'The API key is missing.', 'fili' ) ) );
 		}
 		if ( ! class_exists( '\WpOrg\Requests\Requests' ) ) {
 			require_once ABSPATH . WPINC . '/Requests/src/Autoload.php';
@@ -92,7 +92,7 @@ final class Fili_Jev {
 			);
 		}
 		if ( self::month_spend() + $planned > (float) fili_settings()['monthly_budget'] ) {
-			return array_fill_keys( array_keys( $jobs ), new WP_Error( 'fili_budget', __( 'Tetto di spesa mensile raggiunto: Fili si ferma qui.', 'fili' ) ) );
+			return array_fill_keys( array_keys( $jobs ), new WP_Error( 'fili_budget', __( 'Monthly spending cap reached: Fili stops here.', 'fili' ) ) );
 		}
 		$responses = \WpOrg\Requests\Requests::request_multiple( $requests, array(
 			'timeout' => 60,
@@ -103,11 +103,11 @@ final class Fili_Jev {
 		foreach ( $jobs as $k => $_ ) {
 			$r = $responses[ $k ] ?? null;
 			if ( ! $r instanceof \WpOrg\Requests\Response ) {
-				$out[ $k ] = new WP_Error( 'fili_net', __( 'Connessione non riuscita.', 'fili' ) );
+				$out[ $k ] = new WP_Error( 'fili_net', __( 'Connection failed.', 'fili' ) );
 				continue;
 			}
 			if ( in_array( (int) $r->status_code, array( 429, 529 ), true ) ) {
-				$out[ $k ] = new WP_Error( 'fili_retry', __( 'Il servizio è occupato.', 'fili' ) );
+				$out[ $k ] = new WP_Error( 'fili_retry', __( 'The service is busy.', 'fili' ) );
 				continue;
 			}
 			$data = 200 === (int) $r->status_code ? json_decode( $r->body, true ) : null;
