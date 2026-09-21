@@ -95,6 +95,10 @@
 .fili-form label.fili-check { font-weight: 400; font-size: 14px; margin: 10px 0 0; }
 .fili-form input[type=text], .fili-form input[type=password], .fili-form input[type=number], .fili-form select, .fili-form textarea { width: 100%; max-width: 100%; border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px 12px; font-size: 14px; line-height: 1.4; min-height: 40px; }
 .fili-form input[type=number] { max-width: 140px; }
+.fili-details { margin: 10px 0 0; }
+.fili-details summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--thread); }
+.fili-snippet { margin: 10px 0 0; padding: 12px 14px; background: var(--ground); border: 1px solid var(--line); border-radius: 6px; font: 400 12.5px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-all; user-select: all; }
+.fili-form input[disabled] { background: var(--ground); color: var(--dim); cursor: not-allowed; }
 .fili-pages { margin-top: 22px; }
 .fili-pages .page-numbers { display: inline-block; padding: 6px 12px; border-radius: 6px; color: var(--dim); text-decoration: none; font-weight: 600; }
 .fili-pages .current { background: var(--ink); color: #fff; }

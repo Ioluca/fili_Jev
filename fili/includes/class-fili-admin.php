@@ -11,7 +11,7 @@ final class Fili_Admin {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_action( 'admin_post_fili_save', array( __CLASS__, 'save_settings' ) );
-		foreach ( array( 'start', 'step', 'stop', 'decide', 'apply', 'undo', 'threshold', 'decide_all', 'queue' ) as $a ) {
+		foreach ( array( 'start', 'step', 'stop', 'decide', 'apply', 'undo', 'threshold', 'decide_all', 'queue', 'key_line', 'key_delete' ) as $a ) {
 			add_action( 'wp_ajax_fili_' . $a, array( __CLASS__, 'ajax_' . $a ) );
 		}
 	}
@@ -119,6 +119,22 @@ final class Fili_Admin {
 		);
 	}
 
+	/** The wp-config line, shown only when an admin asks for it. */
+	public static function ajax_key_line(): void {
+		self::guard();
+		$k = fili_api_key();
+		if ( '' === $k || ( defined( 'FILI_API_KEY' ) && FILI_API_KEY ) ) {
+			wp_send_json_error( array( 'message' => __( 'Non c\'è una chiave salvata da spostare.', 'fili' ) ) );
+		}
+		wp_send_json_success( array( 'line' => "define( 'FILI_API_KEY', '" . addcslashes( $k, "\\'" ) . "' );" ) );
+	}
+
+	public static function ajax_key_delete(): void {
+		self::guard();
+		delete_option( 'fili_api_key' );
+		wp_send_json_success();
+	}
+
 	public static function ajax_apply(): void {
 		self::guard();
 		$r = Fili_Apply::apply( (int) ( $_POST['id'] ?? 0 ) );
@@ -210,6 +226,7 @@ final class Fili_Admin {
 
 	public static function page_proposals(): void {
 		global $wpdb;
+		Fili_Engine::refilter(); // before any query: the guards may have improved since last time
 		$s      = fili_settings();
 		$view   = sanitize_key( $_GET['view'] ?? 'proposed' ); // phpcs:ignore
 		$view   = in_array( $view, array( 'proposed', 'approved', 'applied', 'rejected' ), true ) ? $view : 'proposed';
@@ -218,7 +235,6 @@ final class Fili_Admin {
 		$where  = $wpdb->prepare( 'status=%s AND score>=%f', $view, 'proposed' === $view ? (float) $s['threshold'] : 0 );
 		$total  = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . Fili_DB::t( 'proposals' ) . " WHERE $where" ); // phpcs:ignore
 		$rows   = $wpdb->get_results( 'SELECT * FROM ' . Fili_DB::t( 'proposals' ) . " WHERE $where ORDER BY score DESC LIMIT " . ( ( $page - 1 ) * $per ) . ",$per" ); // phpcs:ignore
-		Fili_Engine::refilter();
 		$counts = $wpdb->get_results( $wpdb->prepare( 'SELECT status, COUNT(*) n FROM ' . Fili_DB::t( 'proposals' ) . " WHERE status<>'proposed' OR score>=%f GROUP BY status", (float) $s['threshold'] ), OBJECT_K ); // phpcs:ignore
 		$sugg   = self::measured_threshold();
 
@@ -353,12 +369,39 @@ final class Fili_Admin {
 					<option value="typesafe" <?php selected( $s['route'], 'typesafe' ); ?>>TypeSafe (API ufficiale)</option>
 					<option value="openrouter" <?php selected( $s['route'], 'openrouter' ); ?>>OpenRouter</option>
 				</select>
+				<?php $da_costante = defined( 'FILI_API_KEY' ) && FILI_API_KEY; ?>
 				<label for="fili-key"><?php esc_html_e( 'Chiave API', 'fili' ); ?></label>
-				<?php if ( defined( 'FILI_API_KEY' ) && FILI_API_KEY ) : ?>
-					<p class="fili-note"><?php esc_html_e( 'Definita in wp-config.php con FILI_API_KEY: è il posto più sicuro, qui non serve altro.', 'fili' ); ?></p>
+				<input id="fili-key" type="password" name="api_key" autocomplete="off"
+					placeholder="<?php echo esc_attr( $key ? '••••••••' . substr( $key, -4 ) : __( 'incolla qui la tua chiave', 'fili' ) ); ?>"
+					<?php disabled( $da_costante ); ?>>
+				<?php if ( $da_costante ) : ?>
+					<p class="fili-note fili-ok">
+						<?php
+						printf(
+							/* translators: %s: last four characters of the key */
+							esc_html__( 'In uso la chiave definita in wp-config.php (termina con %s). È il posto più sicuro: resta fuori dal database e fuori dai backup del database.', 'fili' ),
+							'<b>' . esc_html( substr( $key, -4 ) ) . '</b>'
+						);
+						?>
+					</p>
+					<p class="fili-note">
+						<?php esc_html_e( 'Per cambiarla, modifica quella riga in wp-config.php. Per tornare a gestirla da qui, cancella la riga: il campo qui sopra torna attivo.', 'fili' ); ?>
+					</p>
 				<?php else : ?>
-					<input id="fili-key" type="password" name="api_key" autocomplete="off" placeholder="<?php echo esc_attr( $key ? '••••••••' . substr( $key, -4 ) : '' ); ?>">
-					<p class="fili-note"><?php esc_html_e( 'La chiave non viene mai rimostrata per intero. Lascia vuoto per tenere quella salvata. È conservata nel database del sito: chi ha accesso al database può leggerla. Per tenerla fuori dal database, definisci FILI_API_KEY in wp-config.php.', 'fili' ); ?></p>
+					<p class="fili-note">
+						<?php esc_html_e( 'Per sostituirla basta incollarne una nuova e salvare. Lascia vuoto per tenere quella che c\'è. Non viene mai rimostrata per intero.', 'fili' ); ?>
+						<?php if ( $key ) : ?>
+							<button type="button" class="fili-link" id="fili-key-del"><?php esc_html_e( 'Cancella la chiave salvata', 'fili' ); ?></button>
+						<?php endif; ?>
+					</p>
+					<?php if ( $key ) : ?>
+						<details class="fili-details">
+							<summary><?php esc_html_e( 'Tenerla fuori dal database (più sicuro)', 'fili' ); ?></summary>
+							<p class="fili-note"><?php esc_html_e( 'Ora la chiave sta nel database: finisce in ogni backup del database e la può leggere chiunque vi abbia accesso. Per spostarla, incolla questa riga in wp-config.php, prima della riga che dice di non modificare oltre, poi torna qui e premi "Cancella la chiave salvata".', 'fili' ); ?></p>
+							<p><button type="button" class="fili-btn" id="fili-key-show"><?php esc_html_e( 'Mostra la riga da copiare', 'fili' ); ?></button></p>
+							<pre class="fili-snippet" id="fili-key-snippet" hidden></pre>
+						</details>
+					<?php endif; ?>
 				<?php endif; ?>
 			</fieldset>
 

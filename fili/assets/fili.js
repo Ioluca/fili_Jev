@@ -177,6 +177,25 @@
 		window.setInterval(async () => { try { paintQueue(await call('queue', { cosa: 'stato' })); } catch (e) { /* offline: riprova al prossimo giro */ } }, 60000);
 	}
 
+	/* ---- the key ---- */
+	const keyShow = $('fili-key-show'), keySnippet = $('fili-key-snippet'), keyDel = $('fili-key-del');
+	if (keyShow) {
+		keyShow.addEventListener('click', async () => {
+			try {
+				const d = await call('key_line');
+				keySnippet.textContent = d.line;
+				keySnippet.hidden = false;
+				keyShow.hidden = true;
+			} catch (e) { window.alert(e.message); }
+		});
+	}
+	if (keyDel) {
+		keyDel.addEventListener('click', async () => {
+			if (!window.confirm('Cancellare la chiave salvata nel database?\n\nFallo dopo averla messa in wp-config.php, altrimenti Fili resta senza chiave.')) { return; }
+			try { await call('key_delete'); window.location.reload(); } catch (e) { window.alert(e.message); }
+		});
+	}
+
 	const adopt = $('fili-adopt');
 	if (adopt) { adopt.addEventListener('click', async () => { try { await call('threshold'); window.location.reload(); } catch (e) { window.alert(e.message); } }); }
 })();
