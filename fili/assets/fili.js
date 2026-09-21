@@ -123,6 +123,16 @@
 		document.querySelectorAll('[data-bulk-all]').forEach((b) => b.addEventListener('click', () =>
 			bulk(b.dataset.bulkAll, [...list.querySelectorAll('.fili-row')].map((li) => li.dataset.id))));
 
+		// every proposal of this view, not just the ones on screen
+		document.querySelectorAll('[data-every]').forEach((b) => b.addEventListener('click', async () => {
+			const n = b.dataset.n;
+			const keep = b.dataset.every === 'approved';
+			if (!window.confirm((keep ? 'Tenere' : 'Buttare') + ' tutte e ' + n + ' le proposte, non solo quelle in pagina?\n\nNiente viene applicato al sito: la decisione si cambia anche dopo.')) { return; }
+			b.disabled = true;
+			try { await call('decide_all', { to: b.dataset.every, from: b.dataset.from }); window.location.reload(); }
+			catch (e) { b.disabled = false; window.alert(e.message); }
+		}));
+
 		if (undoBtn) {
 			undoBtn.addEventListener('click', async () => {
 				if (!last) { return; }
@@ -130,6 +140,43 @@
 			});
 		}
 	}
+	/* ---- the gradual application ---- */
+	const queueBox = $('fili-queue');
+	if (queueBox) {
+		const stateEl = $('fili-queue-state'), logEl = $('fili-queue-log');
+		const go = $('fili-queue-go'), stop = $('fili-queue-stop');
+
+		const durata = (s) => {
+			if (s < 3600) { return Math.round(s / 60) + ' minuti'; }
+			const h = Math.round(s / 3600);
+			return h < 48 ? h + ' ore' : Math.round(h / 24) + ' giorni';
+		};
+		const orario = (t) => new Date(t * 1000).toLocaleString('it-IT', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+
+		function paintQueue(q) {
+			if (!q.restano) {
+				stateEl.textContent = 'Non resta niente da applicare.';
+			} else if (q.attiva) {
+				stateEl.textContent = 'In corso. Prossimo gruppo alle ' + orario(q.prossima) + ', finisce fra circa ' + durata(q.eta) + '.';
+			} else {
+				stateEl.textContent = 'In pausa. Avviandola ora, finirebbe fra circa ' + durata(q.eta) + '.';
+			}
+			if (go) { go.hidden = q.attiva || !q.restano; }
+			if (stop) { stop.hidden = !q.attiva; }
+			logEl.replaceChildren(...(q.log || []).map((r) => {
+				const li = document.createElement('li');
+				li.textContent = orario(r.t) + '  ' + r.m;
+				return li;
+			}));
+		}
+
+		paintQueue(FILI.queue);
+		if (go) { go.addEventListener('click', async () => { try { paintQueue(await call('queue', { cosa: 'avvia' })); } catch (e) { window.alert(e.message); } }); }
+		if (stop) { stop.addEventListener('click', async () => { paintQueue(await call('queue', { cosa: 'ferma' })); }); }
+		// a wake-up can land while the page is open: check now and then, without insisting
+		window.setInterval(async () => { try { paintQueue(await call('queue', { cosa: 'stato' })); } catch (e) { /* offline: riprova al prossimo giro */ } }, 60000);
+	}
+
 	const adopt = $('fili-adopt');
 	if (adopt) { adopt.addEventListener('click', async () => { try { await call('threshold'); window.location.reload(); } catch (e) { window.alert(e.message); } }); }
 })();

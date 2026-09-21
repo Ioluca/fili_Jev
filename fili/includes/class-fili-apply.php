@@ -41,7 +41,15 @@ final class Fili_Apply {
 		$new  = substr_replace( $post->post_content, $html, $at, strlen( $p->anchor ) );
 
 		wp_save_post_revision( $post->ID ); // the state before, if no revision holds it yet
-		$ok = $wpdb->update( $wpdb->posts, array( 'post_content' => $new ), array( 'ID' => $post->ID ) );
+		// Google's own documentation counts a change to the links on a page as a significant
+		// update, and an inaccurate lastmod is worse than none (Illyes, 2026). So the modified
+		// date moves, and undo puts the original one back.
+		$now = current_time( 'mysql' );
+		$ok  = $wpdb->update(
+			$wpdb->posts,
+			array( 'post_content' => $new, 'post_modified' => $now, 'post_modified_gmt' => get_gmt_from_date( $now ) ),
+			array( 'ID' => $post->ID )
+		);
 		if ( false === $ok ) {
 			return new WP_Error( 'fili_db', __( 'Il database ha rifiutato la modifica.', 'fili' ) );
 		}
@@ -51,6 +59,8 @@ final class Fili_Apply {
 			'status'        => 'applied',
 			'inserted_html' => $html,
 			'hash_before'   => md5( $post->post_content ),
+			'modified_before' => $post->post_modified,
+			'applied_at'    => $now,
 		), array( 'id' => $proposal_id ) );
 		do_action( 'fili_post_changed', $post->ID );
 		return true;
@@ -68,8 +78,13 @@ final class Fili_Apply {
 		if ( false === $at ) {
 			return new WP_Error( 'fili_edited', __( 'Il link è stato modificato a mano: toglilo dall\'editor.', 'fili' ) );
 		}
-		$old = substr_replace( $post->post_content, $p->anchor, $at, strlen( $p->inserted_html ) );
-		$wpdb->update( $wpdb->posts, array( 'post_content' => $old ), array( 'ID' => $post->ID ) );
+		$old  = substr_replace( $post->post_content, $p->anchor, $at, strlen( $p->inserted_html ) );
+		$campi = array( 'post_content' => $old );
+		if ( $p->modified_before ) {
+			$campi['post_modified']     = $p->modified_before;
+			$campi['post_modified_gmt'] = get_gmt_from_date( $p->modified_before );
+		}
+		$wpdb->update( $wpdb->posts, $campi, array( 'ID' => $post->ID ) );
 		clean_post_cache( $post->ID );
 		wp_save_post_revision( $post->ID );
 		$wpdb->update( Fili_DB::t( 'proposals' ), array( 'status' => 'undone' ), array( 'id' => $proposal_id ) );

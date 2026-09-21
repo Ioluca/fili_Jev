@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Fili
  * Description:       Trova i link interni che mancano e gli articoli che raccontano due volte la stessa notizia. Propone, non scrive: ogni link lo approvi tu e si annulla con un clic.
- * Version:           0.1.1
+ * Version:           0.1.2
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Luca Cazzaniga
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FILI_VERSION', '0.1.1' );
+define( 'FILI_VERSION', '0.1.2' );
 define( 'FILI_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FILI_URL', plugin_dir_url( __FILE__ ) );
 
@@ -25,8 +25,13 @@ require_once FILI_DIR . 'includes/class-fili-text.php';
 require_once FILI_DIR . 'includes/class-fili-jev.php';
 require_once FILI_DIR . 'includes/class-fili-engine.php';
 require_once FILI_DIR . 'includes/class-fili-apply.php';
+require_once FILI_DIR . 'includes/class-fili-queue.php';
 
 register_activation_hook( __FILE__, array( 'Fili_DB', 'install' ) );
+register_deactivation_hook( __FILE__, array( 'Fili_Queue', 'stop' ) );
+
+add_action( 'admin_init', array( 'Fili_DB', 'maybe_upgrade' ) );
+add_action( 'fili_apply_batch', array( 'Fili_Queue', 'run' ) );
 
 if ( is_admin() ) {
 	require_once FILI_DIR . 'includes/class-fili-admin.php';
@@ -50,6 +55,8 @@ function fili_settings(): array {
 		'threshold'      => 0.60,
 		'max_per_post'   => 3,
 		'parallel'       => 4, // questions in flight at once; 1 on a fragile shared host
+		'batch_size'     => 5,  // links applied per wake-up
+		'batch_minutes'  => 30, // minutes between wake-ups
 		'monthly_budget' => 1.00,
 		'themes'         => '',
 		'read_only'      => 1, // while on, Fili can propose but has no way to touch a post

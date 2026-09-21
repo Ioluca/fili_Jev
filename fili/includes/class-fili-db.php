@@ -58,6 +58,8 @@ final class Fili_DB {
 			status VARCHAR(12) NOT NULL DEFAULT 'proposed',
 			inserted_html TEXT NULL,
 			hash_before CHAR(32) NULL,
+			modified_before DATETIME NULL,
+			applied_at DATETIME NULL,
 			created DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY pair (source_id, target_id),
@@ -78,6 +80,15 @@ final class Fili_DB {
 		add_option( 'fili_api_key', '', '', 'no' );
 		add_option( 'fili_state', array( 'phase' => 'idle' ), '', 'no' );
 		add_option( 'fili_spend', array(), '', 'no' );
+	}
+
+	/** Bring an older install up to date without losing anything. */
+	public static function maybe_upgrade(): void {
+		if ( get_option( 'fili_db_version' ) === FILI_VERSION ) {
+			return;
+		}
+		self::install();
+		update_option( 'fili_db_version', FILI_VERSION, false );
 	}
 
 	/** Wipe everything computed, keep settings, key and links already applied. */

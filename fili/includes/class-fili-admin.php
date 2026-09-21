@@ -11,7 +11,7 @@ final class Fili_Admin {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'assets' ) );
 		add_action( 'admin_post_fili_save', array( __CLASS__, 'save_settings' ) );
-		foreach ( array( 'start', 'step', 'stop', 'decide', 'apply', 'undo', 'threshold' ) as $a ) {
+		foreach ( array( 'start', 'step', 'stop', 'decide', 'apply', 'undo', 'threshold', 'decide_all', 'queue' ) as $a ) {
 			add_action( 'wp_ajax_fili_' . $a, array( __CLASS__, 'ajax_' . $a ) );
 		}
 	}
@@ -34,6 +34,7 @@ final class Fili_Admin {
 			'ajax'  => admin_url( 'admin-ajax.php' ),
 			'nonce' => wp_create_nonce( 'fili' ),
 			'state' => Fili_Engine::state(),
+			'queue' => self::queue_state(),
 		) );
 	}
 
@@ -76,6 +77,46 @@ final class Fili_Admin {
 			$wpdb->query( $wpdb->prepare( 'UPDATE ' . Fili_DB::t( 'proposals' ) . " SET status=%s WHERE id=%d AND status IN ('proposed','approved','rejected','undone')", $to, $id ) ); // phpcs:ignore
 		}
 		wp_send_json_success( array( 'ids' => array_values( $ids ), 'to' => $to ) );
+	}
+
+	/** Decide every proposal of a view at once, not just the ones on this page. */
+	public static function ajax_decide_all(): void {
+		self::guard();
+		global $wpdb;
+		$to   = in_array( $_POST['to'] ?? '', array( 'approved', 'rejected' ), true ) ? (string) $_POST['to'] : 'rejected';
+		$from = in_array( $_POST['from'] ?? '', array( 'proposed', 'approved', 'rejected' ), true ) ? (string) $_POST['from'] : 'proposed';
+		$soglia = 'proposed' === $from ? (float) fili_settings()['threshold'] : 0.0;
+		$n = (int) $wpdb->query( $wpdb->prepare(
+			'UPDATE ' . Fili_DB::t( 'proposals' ) . ' SET status=%s WHERE status=%s AND score>=%f', // phpcs:ignore
+			$to, $from, $soglia
+		) );
+		wp_send_json_success( array( 'n' => $n, 'to' => $to ) );
+	}
+
+	/** Start, stop or read the gradual application. */
+	public static function ajax_queue(): void {
+		self::guard();
+		$cosa = sanitize_key( $_POST['cosa'] ?? 'stato' );
+		if ( 'avvia' === $cosa ) {
+			$r = Fili_Queue::start();
+			if ( is_wp_error( $r ) ) {
+				wp_send_json_error( array( 'message' => $r->get_error_message() ) );
+			}
+		} elseif ( 'ferma' === $cosa ) {
+			Fili_Queue::stop();
+		}
+		wp_send_json_success( self::queue_state() );
+	}
+
+	/** @return array<string,mixed> */
+	private static function queue_state(): array {
+		return array(
+			'attiva'    => Fili_Queue::scheduled(),
+			'restano'   => Fili_Queue::pending(),
+			'prossima'  => Fili_Queue::next_run(),
+			'eta'       => Fili_Queue::eta(),
+			'log'       => array_slice( Fili_Queue::log(), 0, 6 ),
+		);
 	}
 
 	public static function ajax_apply(): void {
@@ -196,6 +237,9 @@ final class Fili_Admin {
 		}
 		echo '</p>';
 
+		if ( 'approved' === $view ) {
+			self::queue_panel();
+		}
 		if ( ! $rows ) {
 			echo '<p class="fili-empty">' . esc_html__( 'Niente qui, per ora.', 'fili' ) . '</p></div>';
 			return;
@@ -203,10 +247,17 @@ final class Fili_Admin {
 		echo '<div class="fili-toolbar" data-view="' . esc_attr( $view ) . '">';
 		if ( 'applied' !== $view ) {
 			$all_to = 'approved' === $view ? 'rejected' : 'approved';
+			if ( $total > count( $rows ) ) {
+				printf(
+					'<button class="fili-btn fili-btn-go" data-every="%s" data-from="%s" data-n="%d">%s</button>',
+					esc_attr( $all_to ), esc_attr( $view ), $total,
+					esc_html( sprintf( 'approved' === $all_to ? __( 'Tieni tutte e %d', 'fili' ) : __( 'Butta tutte e %d', 'fili' ), $total ) )
+				);
+			}
 			printf(
-				'<button class="fili-btn fili-btn-go" data-bulk-all="%s">%s</button>',
+				'<button class="fili-btn" data-bulk-all="%s">%s</button>',
 				esc_attr( $all_to ),
-				esc_html( sprintf( 'approved' === $all_to ? __( 'Tieni tutte le %d in pagina', 'fili' ) : __( 'Butta tutte le %d in pagina', 'fili' ), count( $rows ) ) )
+				esc_html( sprintf( 'approved' === $all_to ? __( 'Tieni le %d in pagina', 'fili' ) : __( 'Butta le %d in pagina', 'fili' ), count( $rows ) ) )
 			);
 			echo '<span class="fili-sep"></span><button class="fili-btn" data-bulk="approved">' . esc_html__( 'Tieni le selezionate', 'fili' ) . '</button><button class="fili-btn" data-bulk="rejected">' . esc_html__( 'Butta le selezionate', 'fili' ) . '</button>';
 		}
@@ -237,6 +288,33 @@ final class Fili_Admin {
 		}
 		echo '</ul>';
 		echo '<p class="fili-pages">' . wp_kses_post( paginate_links( array( 'base' => add_query_arg( 'paged', '%#%' ), 'total' => (int) ceil( $total / $per ), 'current' => $page ) ) ?? '' ) . '</p></div>';
+	}
+
+	/** The gradual application: how many are left, how long it takes, what it has done. */
+	private static function queue_panel(): void {
+		$s   = fili_settings();
+		$ro  = ! empty( $s['read_only'] );
+		$n   = Fili_Queue::pending();
+		echo '<section class="fili-queue" id="fili-queue">';
+		echo '<p class="fili-eyebrow">' . esc_html__( 'Applicazione graduale', 'fili' ) . '</p>';
+		printf(
+			'<p class="fili-queue-lead">%s</p>',
+			esc_html( sprintf(
+				/* translators: 1: links waiting, 2: per batch, 3: minutes */
+				__( '%1$d link approvati in attesa. Fili ne applica %2$d ogni %3$d minuti, dagli articoli piu\' vecchi ai piu\' recenti.', 'fili' ),
+				$n, (int) $s['batch_size'], (int) $s['batch_minutes']
+			) )
+		);
+		echo '<p class="fili-queue-state" id="fili-queue-state"></p>';
+		if ( $ro ) {
+			echo '<p class="fili-note fili-err">' . esc_html__( 'La sicura è inserita: togliela nelle impostazioni per poter applicare.', 'fili' ) . '</p>';
+		} else {
+			echo '<p class="fili-actions"><button class="fili-btn fili-btn-go" id="fili-queue-go">' . esc_html__( 'Avvia l\'applicazione graduale', 'fili' ) . '</button>';
+			echo '<button class="fili-btn" id="fili-queue-stop" hidden>' . esc_html__( 'Metti in pausa', 'fili' ) . '</button></p>';
+		}
+		echo '<ul class="fili-queue-log" id="fili-queue-log"></ul>';
+		echo '<p class="fili-note">' . esc_html__( 'Il risveglio dipende dalle visite al sito: su un sito tranquillo la coda avanza un po\' piu\' tardi di quanto dice l\'intervallo, mai piu\' in fretta. Puoi mettere in pausa e riprendere quando vuoi.', 'fili' ) . '</p>';
+		echo '</section>';
 	}
 
 	public static function page_duplicates(): void {
@@ -305,6 +383,11 @@ final class Fili_Admin {
 				<label for="fili-parallel"><?php esc_html_e( 'Richieste insieme', 'fili' ); ?></label>
 				<input id="fili-parallel" type="number" min="1" max="8" name="parallel" value="<?php echo esc_attr( (string) $s['parallel'] ); ?>">
 				<p class="fili-note"><?php esc_html_e( 'Quante domande Fili tiene in volo nello stesso momento. Il costo non cambia, cambia il tempo: con 1 un sito da 800 articoli impiega una dozzina di minuti, con 4 circa tre. Su un hosting condiviso fragile lascia 1 o 2.', 'fili' ); ?></p>
+				<label for="fili-batch"><?php esc_html_e( 'Link applicati per volta', 'fili' ); ?></label>
+				<input id="fili-batch" type="number" min="1" max="50" name="batch_size" value="<?php echo esc_attr( (string) $s['batch_size'] ); ?>">
+				<label for="fili-minutes"><?php esc_html_e( 'Ogni quanti minuti', 'fili' ); ?></label>
+				<input id="fili-minutes" type="number" min="5" max="1440" name="batch_minutes" value="<?php echo esc_attr( (string) $s['batch_minutes'] ); ?>">
+				<p class="fili-note"><?php esc_html_e( 'I link approvati si applicano un po\' alla volta invece che tutti insieme. Serve soprattutto a limitare i danni se qualcosa non va: un errore si vede su dieci articoli, non su duecento. In piu\' la data di modifica degli articoli si distribuisce nel tempo, e la mappa del sito racconta un sito curato invece di duecento pagine cambiate in un minuto. Google non penalizza i link interni verso le proprie pagine: questa e\' prudenza, non una sua regola.', 'fili' ); ?></p>
 				<label for="fili-budget-in"><?php esc_html_e( 'Tetto di spesa al mese, in dollari', 'fili' ); ?></label>
 				<input id="fili-budget-in" type="number" min="0.05" step="0.05" name="monthly_budget" value="<?php echo esc_attr( (string) $s['monthly_budget'] ); ?>">
 				<p class="fili-note"><?php echo esc_html( sprintf( __( 'Speso questo mese, stimato: $%s. Un sito da 800 articoli costa circa 30 centesimi per il primo giro completo.', 'fili' ), number_format_i18n( Fili_Jev::month_spend(), 4 ) ) ); ?></p>
@@ -326,10 +409,16 @@ final class Fili_Admin {
 		$s['post_types']     = array_values( array_intersect( array_map( 'sanitize_key', (array) ( $_POST['post_types'] ?? array( 'post' ) ) ), get_post_types( array( 'public' => true ) ) ) ) ?: array( 'post' );
 		$s['max_per_post']   = min( 10, max( 1, (int) ( $_POST['max_per_post'] ?? 3 ) ) );
 		$s['parallel']       = min( 8, max( 1, (int) ( $_POST['parallel'] ?? 4 ) ) );
+		$s['batch_size']     = min( 50, max( 1, (int) ( $_POST['batch_size'] ?? 5 ) ) );
+		$s['batch_minutes']  = min( 1440, max( 5, (int) ( $_POST['batch_minutes'] ?? 30 ) ) );
 		$s['monthly_budget'] = max( 0.05, (float) ( $_POST['monthly_budget'] ?? 1 ) );
 		$s['themes']         = sanitize_textarea_field( wp_unslash( $_POST['themes'] ?? '' ) );
 		$s['read_only']      = empty( $_POST['read_only'] ) ? 0 : 1;
 		update_option( 'fili_settings', $s, false );
+		if ( Fili_Queue::scheduled() ) {
+			Fili_Queue::stop();
+			Fili_Queue::start(); // the interval changed: reschedule on the new one
+		}
 		$key = trim( (string) wp_unslash( $_POST['api_key'] ?? '' ) );
 		if ( '' !== $key ) {
 			update_option( 'fili_api_key', sanitize_text_field( $key ), false );

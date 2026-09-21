@@ -74,6 +74,11 @@
 .fili-do { display: flex; flex-direction: column; gap: 8px; min-width: 104px; }
 .fili-do .fili-btn { width: 100%; text-align: center; }
 
+.fili-queue { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 22px 24px; margin: 0 0 18px; }
+.fili-queue-lead { margin: 0 0 6px; font-size: 15px; color: var(--ink); max-width: 68ch; }
+.fili-queue-state { margin: 0 0 16px; font-size: 14px; color: var(--thread); font-weight: 600; }
+.fili-queue-log { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.fili-queue-log li { font-size: 12.5px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .fili-group { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px; margin: 0; }
 .fili-group .fili-eyebrow { margin-bottom: 12px; }
 .fili-group ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
