@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Fili
  * Description:       Trova i link interni che mancano e gli articoli che raccontano due volte la stessa notizia. Propone, non scrive: ogni link lo approvi tu e si annulla con un clic.
- * Version:           0.1.3
+ * Version:           0.1.4
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Luca Cazzaniga
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FILI_VERSION', '0.1.3' );
+define( 'FILI_VERSION', '0.1.4' );
 define( 'FILI_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FILI_URL', plugin_dir_url( __FILE__ ) );
 
@@ -26,6 +26,7 @@ require_once FILI_DIR . 'includes/class-fili-jev.php';
 require_once FILI_DIR . 'includes/class-fili-engine.php';
 require_once FILI_DIR . 'includes/class-fili-apply.php';
 require_once FILI_DIR . 'includes/class-fili-queue.php';
+require_once FILI_DIR . 'includes/class-fili-key.php';
 
 register_activation_hook( __FILE__, array( 'Fili_DB', 'install' ) );
 register_deactivation_hook( __FILE__, array( 'Fili_Queue', 'stop' ) );

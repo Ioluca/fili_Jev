@@ -123,14 +123,20 @@ final class Fili_Admin {
 	public static function ajax_key_line(): void {
 		self::guard();
 		$k = fili_api_key();
-		if ( '' === $k || ( defined( 'FILI_API_KEY' ) && FILI_API_KEY ) ) {
-			wp_send_json_error( array( 'message' => __( 'Non c\'è una chiave salvata da spostare.', 'fili' ) ) );
+		if ( '' === $k ) {
+			wp_send_json_error( array( 'message' => __( 'Non c\'è nessuna chiave salvata.', 'fili' ) ) );
 		}
-		wp_send_json_success( array( 'line' => "define( 'FILI_API_KEY', '" . addcslashes( $k, "\\'" ) . "' );" ) );
+		wp_send_json_success( array( 'line' => Fili_Key::line( $k ) ) );
 	}
 
 	public static function ajax_key_delete(): void {
 		self::guard();
+		if ( Fili_Key::in_config() ) {
+			$r = Fili_Key::write_config( '' );
+			if ( is_wp_error( $r ) ) {
+				wp_send_json_error( array( 'message' => $r->get_error_message() ) );
+			}
+		}
 		delete_option( 'fili_api_key' );
 		wp_send_json_success();
 	}
@@ -356,7 +362,9 @@ final class Fili_Admin {
 		$s   = fili_settings();
 		$key = fili_api_key();
 		self::head( __( 'Impostazioni', 'fili' ), __( 'Fili parla con un solo servizio: quello che scegli qui, con la tua chiave. Non manda niente a nessun altro.', 'fili' ) );
-		if ( isset( $_GET['saved'] ) ) { // phpcs:ignore
+		if ( ! empty( $_GET['errore'] ) ) { // phpcs:ignore
+			echo '<p class="fili-note fili-err">' . esc_html( sanitize_text_field( wp_unslash( $_GET['errore'] ) ) ) . '</p>'; // phpcs:ignore
+		} elseif ( isset( $_GET['saved'] ) ) { // phpcs:ignore
 			echo '<p class="fili-note fili-ok">' . esc_html__( 'Salvato.', 'fili' ) . '</p>';
 		}
 		?>
@@ -369,40 +377,45 @@ final class Fili_Admin {
 					<option value="typesafe" <?php selected( $s['route'], 'typesafe' ); ?>>TypeSafe (API ufficiale)</option>
 					<option value="openrouter" <?php selected( $s['route'], 'openrouter' ); ?>>OpenRouter</option>
 				</select>
-				<?php $da_costante = defined( 'FILI_API_KEY' ) && FILI_API_KEY; ?>
+				<?php
+				$in_config = Fili_Key::in_config();
+				$dove      = $in_config ? __( 'in wp-config.php', 'fili' ) : __( 'nel database del sito', 'fili' );
+				?>
 				<label for="fili-key"><?php esc_html_e( 'Chiave API', 'fili' ); ?></label>
-				<input id="fili-key" type="password" name="api_key" autocomplete="off"
-					placeholder="<?php echo esc_attr( $key ? '••••••••' . substr( $key, -4 ) : __( 'incolla qui la tua chiave', 'fili' ) ); ?>"
-					<?php disabled( $da_costante ); ?>>
-				<?php if ( $da_costante ) : ?>
-					<p class="fili-note fili-ok">
-						<?php
-						printf(
-							/* translators: %s: last four characters of the key */
-							esc_html__( 'In uso la chiave definita in wp-config.php (termina con %s). È il posto più sicuro: resta fuori dal database e fuori dai backup del database.', 'fili' ),
-							'<b>' . esc_html( substr( $key, -4 ) ) . '</b>'
-						);
-						?>
-					</p>
-					<p class="fili-note">
-						<?php esc_html_e( 'Per cambiarla, modifica quella riga in wp-config.php. Per tornare a gestirla da qui, cancella la riga: il campo qui sopra torna attivo.', 'fili' ); ?>
-					</p>
-				<?php else : ?>
-					<p class="fili-note">
-						<?php esc_html_e( 'Per sostituirla basta incollarne una nuova e salvare. Lascia vuoto per tenere quella che c\'è. Non viene mai rimostrata per intero.', 'fili' ); ?>
-						<?php if ( $key ) : ?>
-							<button type="button" class="fili-link" id="fili-key-del"><?php esc_html_e( 'Cancella la chiave salvata', 'fili' ); ?></button>
-						<?php endif; ?>
-					</p>
-					<?php if ( $key ) : ?>
-						<details class="fili-details">
-							<summary><?php esc_html_e( 'Tenerla fuori dal database (più sicuro)', 'fili' ); ?></summary>
-							<p class="fili-note"><?php esc_html_e( 'Ora la chiave sta nel database: finisce in ogni backup del database e la può leggere chiunque vi abbia accesso. Per spostarla, incolla questa riga in wp-config.php, prima della riga che dice di non modificare oltre, poi torna qui e premi "Cancella la chiave salvata".', 'fili' ); ?></p>
-							<p><button type="button" class="fili-btn" id="fili-key-show"><?php esc_html_e( 'Mostra la riga da copiare', 'fili' ); ?></button></p>
-							<pre class="fili-snippet" id="fili-key-snippet" hidden></pre>
-						</details>
-					<?php endif; ?>
+				<?php if ( $key ) : ?>
+					<div class="fili-key-now">
+						<code>&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;<?php echo esc_html( substr( $key, -4 ) ); ?></code>
+						<span><?php
+						/* translators: %s: where the key is stored */
+						printf( esc_html__( 'in uso, salvata %s', 'fili' ), esc_html( $dove ) );
+						?></span>
+						<button type="button" class="fili-btn" id="fili-key-change"><?php esc_html_e( 'Cambia chiave', 'fili' ); ?></button>
+					</div>
 				<?php endif; ?>
+				<div id="fili-key-box" <?php echo $key ? 'hidden' : ''; ?>>
+					<input id="fili-key" type="password" name="api_key" autocomplete="off"
+						placeholder="<?php esc_attr_e( 'incolla qui la chiave nuova', 'fili' ); ?>">
+					<p class="fili-key-where">
+						<label class="fili-check"><input type="radio" name="key_where" value="config" <?php checked( $in_config ); ?> <?php disabled( ! Fili_Key::config_writable() ); ?>>
+							<?php esc_html_e( 'in wp-config.php', 'fili' ); ?>
+							<em><?php echo Fili_Key::config_writable() ? esc_html__( 'consigliato: resta fuori dal database e dai suoi backup', 'fili' ) : esc_html__( 'non disponibile: il tuo hosting protegge il file', 'fili' ); ?></em>
+						</label>
+						<label class="fili-check"><input type="radio" name="key_where" value="db" <?php checked( ! $in_config ); ?>>
+							<?php esc_html_e( 'nel database', 'fili' ); ?>
+							<em><?php esc_html_e( 'più semplice: la gestisci solo da qui', 'fili' ); ?></em>
+						</label>
+					</p>
+					<p class="fili-note"><?php esc_html_e( 'Salva per applicare. Fili scrive una riga sola in wp-config.php, controlla che il file resti valido prima di toccarlo e, se qualcosa non torna, lo rimette com\'era. Non lascia copie del file nella cartella del sito.', 'fili' ); ?></p>
+					<?php if ( $key ) : ?>
+						<p class="fili-note">
+							<button type="button" class="fili-link" id="fili-key-del"><?php esc_html_e( 'Togli la chiave e ferma Fili', 'fili' ); ?></button>
+							<?php if ( ! Fili_Key::config_writable() && $in_config ) : ?>
+								&middot; <button type="button" class="fili-link" id="fili-key-show"><?php esc_html_e( 'Mostra la riga da copiare a mano', 'fili' ); ?></button>
+							<?php endif; ?>
+						</p>
+						<pre class="fili-snippet" id="fili-key-snippet" hidden></pre>
+					<?php endif; ?>
+				</div>
 			</fieldset>
 
 			<fieldset><legend><?php esc_html_e( 'Cosa legge', 'fili' ); ?></legend>
@@ -462,11 +475,32 @@ final class Fili_Admin {
 			Fili_Queue::stop();
 			Fili_Queue::start(); // the interval changed: reschedule on the new one
 		}
-		$key = trim( (string) wp_unslash( $_POST['api_key'] ?? '' ) );
-		if ( '' !== $key ) {
-			update_option( 'fili_api_key', sanitize_text_field( $key ), false );
+		$key   = sanitize_text_field( trim( (string) wp_unslash( $_POST['api_key'] ?? '' ) ) );
+		$dove  = 'config' === ( $_POST['key_where'] ?? '' ) ? 'config' : 'db';
+		$prima = fili_api_key();
+		$avviso = '';
+		if ( '' !== $key || ( $prima && $dove !== ( Fili_Key::in_config() ? 'config' : 'db' ) ) ) {
+			$valore = '' !== $key ? $key : $prima; // nessuna chiave nuova: si sposta quella che c'e'
+			if ( 'config' === $dove ) {
+				$r = Fili_Key::write_config( $valore );
+				if ( is_wp_error( $r ) ) {
+					$avviso = $r->get_error_message();
+				} else {
+					delete_option( 'fili_api_key' ); // una sola copia, mai due
+				}
+			} else {
+				if ( Fili_Key::in_config() ) {
+					$r = Fili_Key::write_config( '' ); // toglie la riga
+					if ( is_wp_error( $r ) ) {
+						$avviso = $r->get_error_message();
+					}
+				}
+				if ( '' === $avviso ) {
+					update_option( 'fili_api_key', $valore, false );
+				}
+			}
 		}
-		wp_safe_redirect( admin_url( 'admin.php?page=fili-settings&saved=1' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=fili-settings&saved=1' . ( $avviso ? '&errore=' . rawurlencode( $avviso ) : '' ) ) );
 		exit;
 	}
 }

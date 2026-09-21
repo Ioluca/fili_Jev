@@ -178,6 +178,15 @@
 	}
 
 	/* ---- the key ---- */
+	const keyChange = $('fili-key-change'), keyBox = $('fili-key-box');
+	if (keyChange && keyBox) {
+		keyChange.addEventListener('click', () => {
+			keyBox.hidden = false;
+			keyChange.hidden = true;
+			const f = $('fili-key');
+			if (f) { f.focus(); }
+		});
+	}
 	const keyShow = $('fili-key-show'), keySnippet = $('fili-key-snippet'), keyDel = $('fili-key-del');
 	if (keyShow) {
 		keyShow.addEventListener('click', async () => {
@@ -191,7 +200,7 @@
 	}
 	if (keyDel) {
 		keyDel.addEventListener('click', async () => {
-			if (!window.confirm('Cancellare la chiave salvata nel database?\n\nFallo dopo averla messa in wp-config.php, altrimenti Fili resta senza chiave.')) { return; }
+			if (!window.confirm('Togliere la chiave?\n\nFili smette di proporre finche\u2019 non ne inserisci un\u2019altra. I link gia\u2019 applicati restano dove sono.')) { return; }
 			try { await call('key_delete'); window.location.reload(); } catch (e) { window.alert(e.message); }
 		});
 	}
